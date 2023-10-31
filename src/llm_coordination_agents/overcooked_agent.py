@@ -1,0 +1,473 @@
+import openai
+import csv
+from tqdm import tqdm 
+import numpy as np  
+import re 
+import sys 
+import json 
+import logging
+import sys
+import pandas as pd 
+import datetime
+import random 
+
+from overcooked_ai_py.mdp.actions import LLMActionSet
+logging.basicConfig(filename='debug.log', level=logging.DEBUG)
+logging.debug('Initiated Logger...')
+import time 
+import os.path
+
+def set_global_seed(seed):
+    random.seed(seed)
+    np.random.seed(seed)
+
+set_global_seed(42)
+
+# When Using Locally hosted model: 
+# openai.api_key = "EMPTY"  
+# openai.api_base = "http://localhost:8002/v1" # Replace with URL of locally hosted model. Tested with https://github.com/lm-sys/FastChat/blob/main/docs/openai_api.md
+
+# When using openai API
+openai.api_key = os.environ['API_KEY']
+openai.organization = os.environ['ORGANIZATION']
+
+
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKCYAN = '\033[96m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
+def add_to_dict_list(dictionary, key, item):
+    if key not in dictionary:
+        dictionary[key] = [item]
+    else:
+        dictionary[key].append(item)
+        
+EnvDescriptions= {
+    'cramped_room': 'The environment is rectangular with 2 onions dispensers (o0, o1), cooker (c0), plate dispenser (p0) and delivery area (d0). Additionally there are kitchen counters (k0 to k8) which can be used to temporarily store onions and plates while you do something else. Objects on counters can be picked up later and should be considered as they may be closer than items in dispensers.',
+    
+    'no_counter_door': 'Environment Details: The environment is rectangular with 2 onions dispensers (o0, o1), cooker (c0) and plate dispenser (p0). The delivery area (d0) is inaccessible behind closed gates and can be accessed by opening one of the gates (g0, g1). A gate can only be opened by a player if they are not carrying an object. Once the door is opened it will only stay open for a brief time and then close on its own',
+
+    'soup_passing':"Environment Details: The environment is divided into 2 partitions. Alice is in the left partition with access to onion dispenser (o0), plate dispenser (p1), cooker (c0), delivery area (d0) and kitchen counters (k0, k1, k8, k11, k12). Bob is in the right partition with access to onion dispenser (o1), plate dispenser (p0), cooker (c1) and kitchen counters (k3, k4, k6, k10, k14, k15). Only Alice has access to the delivery area (d0). There are shared counters (s0, s1, s2, s3) which can be used to pass onions, plates or cooked soup from one player to the other. Note that the objects on the shared counters can be accessed by both players. Objects on counters can be picked up later and should be considered as they may be closer than items in dispensers. ",
+
+    'soup_passing_door':"The environment is divided into 2 partitions. Alice is in the left partition with access to onion dispenser o0, plate dispenser p1, cooker c0, and delivery area d0. Bob is in the right partition with access to onion dispenser o1, plate dispenser p0, and cooker c1.  The two partitions are connected by gate g0 which can be opened if a player is holding nothing. Opening the gate will allow players to move freely between partitions.  The gate will close after enough time automatically. ",
+
+    'asymmetric_advantages' : 'Environment Details: There are two partitions in the current environment. Bob is in the left partition with access to onion dispenser o0, delivery area d0, plate dispenser p0 and kitchen counters k0, k1, k2, k3, k4, k11, k12, k16, k18, k20, k21, k22, k23. Alice is in the right partition and has access to onion dispenser o1, delivery area d1, plate dispenser p1 and kitchen counters k6, k7, k8, k9, k10, k14, k15, k17, k19, k25, k26, k27, k28. Both have access to both cookers c0 and c1 which are on the partition line. Kitchen counters (k0 to k28) which can be used to temporarily store onions and plates while you do something else. Objects on counters can be picked up later and should be considered as they may be closer than items in dispensers.',
+
+    'forced_coordination' : 'Layout Details: The environment is split into two partitions, one with each player. In the right partition, Alice has access to cookers (c0, c1),  delivery area (d0) and kitchen counters (k6, k8, k12). In the left partition, Bob has access to onion dispensers (o0, o1), plate dispenser (p0) and kitchen counters (k1, k10). Kitchen counters can be used to temporarily store onions and plates while you do something else. Both players have access to shared counters (s0, s1, s2) which can be used to transfer onions and plates depending on the situation. Note that the objects on the shared counters can be accessed by both players. Objects on counters can be picked up later and should be considered as they may be closer than items in dispensers',
+
+
+    'coordination_ring': 'The environment is narrow and circular, featuring onion dispensers (o0, o1), plate dispenser (p0), cookers (c0, c1), and a delivery area (d0). Additionally there are kitchen counters (k0 to k10) which should only be used to temporarily store onions and plates while you do something else. Objects on counters can be picked up later and should be considered as they may be closer than items in dispensers',
+
+    'counter_circuit_o_1order': 'Environment Details: The environment is circular with two onion dispensers (o0, o1), plate dispenser (p0), cookers (c0, c1) and delivery area d0. There are also the shared counters (s0, s1, s2, s3) which can be used to pass objects from one player to the other. Additionally there are kitchen counters (k0 to k15) which can be used to temporarily store onions and plates while you do something else. ',
+
+    'bottleneck': 'Environment Details: There is 1 onion dispenser (o0), plate dispenser (p0), cookers (c0, c1) and delivery area (d0). Additionally there are kitchen counters (k0 to k17) which can be used to temporarily store onions and plates while you do something else. ', 
+
+    'large_room': 'Environment Details: There are 2 onions dispensers (o0, o1), cooker (c0), plate dispenser (p0) and delivery area (d0). Additionally there are kitchen counters (k0 to k19) which can be used to temporarily store onions and plates while you do something else. ', 
+    
+    'centre_objects': 'Environment Details: There is 1 onion dispenser (o0), cooker (c0), plate dispenser (p0) and delivery area (d0). Additionally there are kitchen counters (k0 to k24) which can be used to temporarily store onions and plates while you do something else. ', 
+
+    'centre_pots': 'Environment Details: There are 2 onion dispenser (o0, 1), 2 cookers (c0, c1), 2 plate dispensers (p0, 1) and 2 delivery areas (d0, d1). Additionally there are kitchen counters (k0 to k14) which can be used to temporarily store onions and plates while you do something else. ', 
+}
+
+
+class LLMAgent:
+    def __init__(self, player_id, layout_name):
+        self.player_id = player_id
+        self.layout_name = layout_name
+        self.player_names = ['Alice', 'Bob']
+        self.time_stamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        # Controls 
+        self.DEBUG = False     
+        self.enable_cache = False # True    
+        self.write_to_cache = False 
+        self.save_trajectory = True # True 
+        # Enable kitchen counters only for GPT-4, other models cannot handle the complexity
+        self.enable_kitchen_counters = True 
+        self.explicit_help = False 
+        # self.model = "gpt-4"
+        self.model = 'gpt-3.5-turbo'
+        # self.model = "vicuna-33b-v1.3"
+
+        self.experiment_type = 'ai'
+        
+        self.trial_note = f'{self.layout_name}_ai_{self.model}'        
+        self.trajectory_dir = f'game_trajectories/{self.experiment_type}/{self.layout_name}/'
+        self.log_dir = f'game_logs/{self.experiment_type}/{self.layout_name}/'
+        if not os.path.isdir(self.trajectory_dir):
+            os.makedirs(self.trajectory_dir)
+        if not os.path.isdir(self.log_dir):
+            os.makedirs(self.log_dir)
+        self.trajectory_path = self.trajectory_dir + f'/{self.trial_note}_player_{self.player_id}_{self.time_stamp}.npy'
+        ####
+        
+        self.action_set = LLMActionSet[self.layout_name]
+        self.num_api_calls = 0 
+        self.player_actions = []
+
+        # Set other player ID 
+        if int(self.player_id) == 0:
+            self.other_player_id = 1
+        else:
+            self.other_player_id = 0
+
+
+        self.llm_system_prompt = "You are a friendly chat assistant who is correct and brief at all times."
+
+
+        if self.explicit_help:
+            self.base_prompt = f'''In the game Overcooked, I am {self.player_names[self.player_id]}, my teammate is {self.player_names[self.player_id]}. 
+            {EnvDescriptions[self.layout_name]} 
+            We must coordinate to make onion soups with 3 onions each. Once a soup is cooked it needs to be placed on a plate and delivered. I can only carry one item at a time. My goal is to maximize the number of deliveries. I want to be efficient and prepare for the next soup while the current soup is cooking. I'll provide my action history, current state, teammate's status, and my possible actions. I want to prefer helping the other player with their cooking and delivery if the situation arises. Help me select the best action from the list. Format your response as: Explanation:<Brief explanation for next action including a prediction of {self.player_names[self.player_id]}'s next action>. Action: <action>. Only select one action. Do not say anything else. Got it?'''
+        else:
+            self.base_prompt = f'''In the game Overcooked, I am {self.player_names[self.player_id]}, my teammate is {self.player_names[self.player_id]}. 
+            {EnvDescriptions[self.layout_name]} 
+            We must coordinate to make onion soups with 3 onions each. Once a soup is cooked it needs to be placed on a plate and delivered. I can only carry one item at a time. My goal is to maximize the number of deliveries. I want to be efficient and prepare for the next soup while the current soup is cooking. I'll provide my action history, current state, teammate's status, and my possible actions. Help me select the best action from the list. Format your response as: Explanation:<Brief explanation for next action including a prediction of {self.player_names[self.player_id]}'s next action>. Action: <action>. Only select one action. Do not say anything else. Got it?'''
+
+        self.assistant_response_initial = f'''Got it!'''
+
+        self.action_regex = r"Action:\s*(.*)"
+
+        self.message = [
+                    {"role": "system", "content": self.llm_system_prompt},
+                    {"role": "user", "content": self.base_prompt},
+                    {"role": "assistant", "content": self.assistant_response_initial},
+                ]
+        self.summary_so_far = ''
+        self.tokens_used = 0 
+        if self.enable_cache:  
+            if os.path.isfile(self.cache_path):
+                self.cache = json.load(open(self.cache_path, 'r'))
+            else:
+                self.cache = {}
+        else:
+            self.cache = {}
+        
+        self.all_actions = []
+        for key, value in self.action_set.items():
+            if isinstance(value, list):
+                self.all_actions.extend(value)
+        # print(self.all_actions)
+        self.log_csv_dict = {}
+        self.action_history = []
+    
+    def _get_available_actions(self, state_for_llm, message):
+        # Available Action Constraints
+        available_actions = []
+        # Check what player is holding 
+        if state_for_llm[self.player_id]['held_object'] == "nothing":
+            for idx, d in enumerate(state_for_llm['distances']['onion_dispenser']):
+                if d[0] not in ['infinite']:
+                    available_actions.append(self.action_set['onion_dispenser'][idx])
+
+            for idx, d in enumerate(state_for_llm['distances']['plate_dispenser']):
+                if d[0] not in ['infinite']:
+                    available_actions.append(self.action_set['plate'][idx])
+            
+            if self.enable_kitchen_counters:
+            
+                for idx, d in enumerate(state_for_llm['distances']['kitchen_counter']):
+                    if d[0] not in ['infinite'] and state_for_llm['kitchen_counter_objects'][idx] == 'onion':
+                        available_actions.append(self.action_set['kitchen_counter_pick_onion'][idx])
+                    if d[0] not in ['infinite'] and state_for_llm['kitchen_counter_objects'][idx] == 'plate':
+                        available_actions.append(self.action_set['kitchen_counter_pick_plate'][idx])
+                    if d[0] not in ['infinite'] and state_for_llm['kitchen_counter_objects'][idx] == 'soup in plate':
+                        available_actions.append(self.action_set['kitchen_counter_pick_soup'][idx])
+
+
+            if 'storage_counter_pick_onion' in self.action_set:
+                for idx, d in enumerate(state_for_llm['distances']['storage_counter']):
+                    if d[0] not in ['infinite']:
+                        if state_for_llm['storage_counter_objects'][idx] == 'onion':
+                            available_actions.append(self.action_set['storage_counter_pick_onion'][idx])
+                        elif state_for_llm['storage_counter_objects'][idx] == 'plate':
+                            available_actions.append(self.action_set['storage_counter_pick_plate'][idx])
+                        elif state_for_llm['storage_counter_objects'][idx] == 'soup in plate':
+                            available_actions.append(self.action_set['storage_counter_pick_soup'][idx])
+            
+            for idx, d in enumerate(state_for_llm['distances']['gate']):
+                if d[0] not in ['infinite']:
+                    if state_for_llm['gate_status'][idx] == 'closed':
+                        available_actions.append(self.action_set['gate'][idx])
+
+            # Add turn on cooker to instruction instead of internal mechanism
+            # for idx, d in enumerate(state_for_llm['distances']['cooker']):
+            #     if d[0] != 'infinite':
+            #         available_actions.append(self.action_set['cooking_status'][idx])
+
+        elif state_for_llm[self.player_id]['held_object'] == 'onion':
+            for idx, d in enumerate(state_for_llm['distances']['cooker']):
+                if d[0] not in ['infinite']:
+                    available_actions.append(self.action_set['cooker'][idx])
+
+            if self.enable_kitchen_counters:
+                if len(self.empty_kitchen_counters)>0:
+                    
+                    kidx = self.empty_kitchen_counter_distances.index(min(self.empty_kitchen_counter_distances))
+                    
+                    k_action = self.action_set['kitchen_counter_place_onion'][kidx]
+                    
+                    available_actions.append(k_action)
+
+            if 'storage_counter_place_onion' in self.action_set:
+                for idx, d in enumerate(state_for_llm['distances']['storage_counter']):
+                    if d[0] not in ['infinite']:
+                        if state_for_llm['storage_counter_objects'][idx] == 'empty':
+                            available_actions.append(self.action_set['storage_counter_place_onion'][idx])
+
+        elif state_for_llm[self.player_id]['held_object'] == 'plate':
+            for idx, d in enumerate(state_for_llm['distances']['cooker']):
+                if d[0] not in ['infinite']:
+                    available_actions.append(self.action_set['cooked_soup'][idx])
+            
+            if self.enable_kitchen_counters:
+                if len(self.empty_kitchen_counters)>0:
+                    kidx = self.empty_kitchen_counter_distances.index(min(self.empty_kitchen_counter_distances))
+                    
+                    k_action = self.action_set['kitchen_counter_place_plate'][kidx]
+                    
+                    available_actions.append(k_action)
+
+            if 'storage_counter_place_plate' in self.action_set:
+                for idx, d in enumerate(state_for_llm['distances']['storage_counter']):
+                    if d[0] not in ['infinite']:
+                        if state_for_llm['storage_counter_objects'][idx] == 'empty':
+                            available_actions.append(self.action_set['storage_counter_place_plate'][idx])
+
+        elif state_for_llm[self.player_id]['held_object'] == 'soup in plate':
+            for idx, d in enumerate(state_for_llm['distances']['delivery_zone']):
+                if d[0] not in ['infinite']:
+                    available_actions.append(self.action_set['delivery_area'][idx])
+            if self.enable_kitchen_counters:
+                if len(self.empty_kitchen_counters)>0:
+                    kidx = self.empty_kitchen_counter_distances.index(min(self.empty_kitchen_counter_distances))
+                    
+                    k_action = self.action_set['kitchen_counter_place_plate'][kidx]
+                    
+                    available_actions.append(k_action)
+
+            if 'storage_counter_place_soup' in self.action_set:
+                for idx, d in enumerate(state_for_llm['distances']['storage_counter']):
+                    if d[0] not in ['infinite']:
+                        if state_for_llm['storage_counter_objects'][idx] == 'empty':
+                            available_actions.append(self.action_set['storage_counter_place_soup'][idx])
+        return available_actions + self.action_set['wait'] + self.action_set['collision_avoidance']
+
+    def _correct_dish_to_plate(self, state_for_llm):
+        if state_for_llm[self.player_id ]['held_object'] == 'dish':
+            state_for_llm[self.player_id ]['held_object'] = 'plate'
+        
+        if state_for_llm[self.other_player_id]['held_object'] == 'dish':
+            state_for_llm[self.player_id ]['held_object'] = 'plate'
+        return state_for_llm
+    
+    def _add_history(self):
+        description = f'''action history: {', '.join(self.action_history[-5:])}.\n'''
+        add_to_dict_list(self.log_csv_dict, f"action_history", self.action_history)
+        return description
+
+    def _add_held_object_info(self, state_for_llm):
+
+        description = f'''<Inventory>: I am holding {state_for_llm[self.player_id ]['held_object']}. {self.player_names[self.other_player_id]} is holding {state_for_llm[self.other_player_id ]['held_object']}. '''
+        
+        add_to_dict_list(self.log_csv_dict, f"player_held_object", state_for_llm[self.player_id ]['held_object'])
+        add_to_dict_list(self.log_csv_dict, f"other_player_held_object", state_for_llm[self.other_player_id ]['held_object'])
+        return description
+
+    def _add_kitchen_facility_info(self, state_for_llm):
+        # TODO: Add kitchen counter distances to both Bob and Alice's
+        self.empty_kitchen_counters = []
+        self.empty_kitchen_counter_distances = []
+        description = f"<My location information:> "
+        for obj_type in ['onion_dispenser', 'plate_dispenser', 'delivery_zone', 'cooker', 'storage_counter', 'gate']:
+            for idx, d in enumerate(state_for_llm['distances'][obj_type]):
+                if d[0] == 'infinite':
+                    description += f"{obj_type[0]}{idx} is inaccessible. "
+                elif d[0] =='blocked':
+                    description += f"{obj_type[0]}{idx} is blocked by {self.player_names[int(self.other_player_id)]}. " 
+                else:
+                    description += f"{obj_type[0]}{idx} is {d[0]} units away. "
+
+                add_to_dict_list(self.log_csv_dict, f"{obj_type[0]}{idx}_distance_from_{self.player_names[self.player_id]}", str(d[0]))
+    
+                
+        description += f"\n<{self.player_names[self.other_player_id]}'s location information>: "
+        for obj_type in ['onion_dispenser', 'plate_dispenser', 'delivery_zone', 'cooker', 'storage_counter', 'gate']:
+            for idx, d in enumerate(state_for_llm['distances'][obj_type]):
+                if d[1] == 'infinite':
+                    description += f"{obj_type[0]}{idx} is inaccessible. "
+                elif d[1] =='blocked':
+                    description += f"{obj_type[0]}{idx} is blocked by {self.player_names[int(self.player_id)]}. " 
+                else:
+                    description += f"{obj_type[0]}{idx} is {d[1]} units away. "
+                
+                add_to_dict_list(self.log_csv_dict, f"{obj_type[0]}{idx}_distance_from_{self.player_names[self.other_player_id]}", str(d[1]))
+            
+        description += f"\n<Environment Details>: "
+        for obj_type in ['cooker', 'storage_counter', 'kitchen_counter', 'gate']:
+            for idx, d in enumerate(state_for_llm['distances'][obj_type]):
+                if obj_type == 'cooker':
+                        description += f"c{idx} contains {state_for_llm['num_onions_in_pot'][idx]} out of 3 onions. "
+                        add_to_dict_list(self.log_csv_dict, f"c{idx}_num_onions", state_for_llm['num_onions_in_pot'][idx])
+                        description += f"c{idx} is {state_for_llm['cooker_status'][idx]}. "
+                        add_to_dict_list(self.log_csv_dict, f"c{idx}_cooker_status", state_for_llm['cooker_status'][idx])
+                        description += f"soup in c{idx} is {state_for_llm['soup_in_cooker_status'][idx]}. "
+                        # if state_for_llm['soup_in_cooker_status'][idx] == 'still cooking':
+                        #     description += f"soup in c{idx} needs {state_for_llm['soup_in_cooker_remaining_time'][idx]} timesteps to cook. "
+                        add_to_dict_list(self.log_csv_dict, f"c{idx}_soup_in_cooker_status", state_for_llm['soup_in_cooker_status'][idx])
+                if self.enable_kitchen_counters:
+                    if obj_type == 'kitchen_counter':
+                        if state_for_llm['kitchen_counter_objects'][idx] != 'empty':
+                            if d[0] == 'infinite':
+                                description += f'k{idx} is inaccessible. '
+                            elif d[0] == 'blocked':
+                                description += f"k{idx} is blocked by {self.player_names[int(self.other_player_id)]}. " 
+                            else:
+                                description += f"k{idx} is {d[0]} units away. "
+                                description += f"k{idx} contains {state_for_llm['kitchen_counter_objects'][idx]}. " 
+                            self.empty_kitchen_counter_distances.append(float('inf'))
+                        else:
+                            if d[0] in ['infinite', 'blocked']:
+                                self.empty_kitchen_counter_distances.append(float('inf'))
+                            else:
+                                self.empty_kitchen_counter_distances.append(int(d[0]))
+                                self.empty_kitchen_counters.append(f'k{idx}')
+                
+                if obj_type == 'gate':
+                    if d[0] not in ['infinite']:
+                        description += f"g{idx} is {state_for_llm['gate_status'][idx]}. "
+                        if state_for_llm['gate_status'][idx] == 'open':
+                            description += f"g{idx} will stay open for {10 - state_for_llm['gate_open_time'][idx]} timesteps. "
+
+                if self.layout_name in ['forced_coordination', 'counter_circuit_o_1order', 'soup_passing']:   
+                    if obj_type == 'storage_counter':
+                        if state_for_llm['storage_counter_objects'][idx] == 'empty':
+                            description += f"s{idx} is empty. "
+                        else:
+                            description += f"s{idx} contains {state_for_llm['storage_counter_objects'][idx]}. "
+                        add_to_dict_list(self.log_csv_dict, f"s{idx} object", state_for_llm['storage_counter_objects'][idx]) 
+
+                # When there are no kitchen counters:
+        if self.enable_kitchen_counters:
+            if len(self.empty_kitchen_counter_distances) > 0:
+                closest_kitchen_counter = self.empty_kitchen_counter_distances.index(min(self.empty_kitchen_counter_distances))
+                distance_to_closest_kitchen_counter = min(self.empty_kitchen_counter_distances)
+                # print('Number of kitchen counters: ', len(self.empty_kitchen_counter_distances))
+                if distance_to_closest_kitchen_counter != float('inf'):
+                    description += f'Closest empty kitchen counter k{closest_kitchen_counter} is {distance_to_closest_kitchen_counter} units away. '
+
+        return description
+    
+    def _parse_and_add_dialog(self, other_player_message):
+        description = ''
+        if other_player_message != '':
+            description += f' {self.player_names[self.other_player_id]} says: {other_player_message}'
+            
+        add_to_dict_list(self.log_csv_dict, f"other_player_message", other_player_message)
+        
+        return description
+
+    def _state_to_description(self, state_for_llm, other_player_message):
+        state_for_llm = self._correct_dish_to_plate(state_for_llm)
+        description = self._add_history() 
+        # Add state information in natural language 
+        description += self._add_held_object_info(state_for_llm)
+        description += self._add_kitchen_facility_info(state_for_llm)
+
+        # get available actions based on current state and add the information to the description
+        self.available_actions_list = self._get_available_actions(state_for_llm, None)
+        available_actions = ', '.join(self.available_actions_list)
+        description += f"\nAvailable Actions: [{available_actions}]. "
+        add_to_dict_list(self.log_csv_dict, f"available_actions", " | ".join(self.available_actions_list))
+
+        return description
+
+    def get_player_action(self, state_for_llm, other_player_message):
+        state_description = self._state_to_description(state_for_llm, other_player_message)
+        response_string = ''
+        message = ''
+        print(f"{bcolors.FAIL}{state_description}{bcolors.ENDC}")
+        if self.DEBUG:
+            selected_action = 'wait.'
+        elif len(self.player_actions) > 0:
+            selected_action = self.player_actions.pop(0)
+            message = ''
+            add_to_dict_list(self.log_csv_dict, 'full_state_description', state_description)
+            add_to_dict_list(self.log_csv_dict, 'selected_action', selected_action)
+            add_to_dict_list(self.log_csv_dict, 'llm_response', 'LLM NOT USED') 
+
+            self.action_history.append(selected_action)
+            if self.save_trajectory:
+                np.save(self.trajectory_path,self.action_history)
+        else:
+            try: 
+                # cache which contains the selected action as value 
+                state_only_desc = state_description[state_description.find('state:'):]
+                if self.enable_cache and state_only_desc in self.cache:
+                    action, message = self.cache[state_only_desc]
+                else:
+                    if len(self.available_actions_list) > 1:
+                        if self.player_id == 1 and set(self.available_actions_list) == set(['wait.', 'move away.']):
+                            action = 'wait.'
+                        else:
+                            response = openai.ChatCompletion.create(
+                                model=self.model,
+                                messages=self.message + [{"role": "user", "content": state_description}],
+                                temperature=0.5 if self.explicit_help else 0.6
+                            )
+                            
+                            self.num_api_calls += 1
+
+                            response_string = response["choices"][0]["message"]["content"]
+                            print(f'''{bcolors.WARNING}LLM RESPONSE: {response_string}{bcolors.ENDC}''')
+
+                            match = re.search(self.action_regex, response_string.strip())
+                            if match:
+                                action = match.group(1).strip().lower()
+                            else:
+                                action = 'wait.'
+
+                    else:
+                        action = 'wait.'
+
+                    
+                    self.cache[state_only_desc] = (action, message)
+                    if self.write_to_cache:
+                        with open(self.cache_save_path, 'w') as f:
+                            json.dump(self.cache, f)
+
+                print(f"{bcolors.OKBLUE}Number of API calls made by player {self.player_id}: {bcolors.ENDC}", self.num_api_calls)
+                if action in self.all_actions:
+                    if action in self.available_actions_list:
+                        selected_action = action 
+                    else:
+                        selected_action = 'wait.'
+                else:
+                    print("WARNING: LLM returned an action that is not in the defined action set. ")
+                    selected_action = 'wait.'
+            except Exception as e:
+                selected_action = 'wait.' 
+                print(f'Failed to get response from openai api for player {self.player_id} due to {e}')
+                sys.exit(0)
+                pass
+            add_to_dict_list(self.log_csv_dict, 'full_state_description', state_description)
+            add_to_dict_list(self.log_csv_dict, 'selected_action', selected_action)
+            add_to_dict_list(self.log_csv_dict, 'llm_response', response_string) 
+            
+            df = pd.DataFrame(self.log_csv_dict)
+            df.to_csv(f"game_logs/{self.experiment_type}/{self.layout_name}/{self.trial_note}_player_{self.player_id}_{self.time_stamp}.csv") 
+            
+            self.action_history.append(selected_action)
+            if self.save_trajectory:
+                np.save(self.trajectory_path,self.action_history)
+
+        print('SELECTED ACTION: ', selected_action) 
+        
+        return selected_action, message 
+
