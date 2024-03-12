@@ -1,0 +1,3 @@
+export TRANSFORMERS_CACHE=/projectnb/pnn/.cache
+export HF_HOME=/projectnb/pnn/.cache
+export HF_DATASETS_CACHE=/projectnb/pnn/.cache

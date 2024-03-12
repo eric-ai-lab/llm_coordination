@@ -174,6 +174,9 @@ node_modules/
 !**/static/**/*.png
 !src/overcooked_demo/server/static/lib
 reproduced_results/
-src/overcooked_demo/server/game_logs/
-src/overcooked_demo/server/game_trajectories/
-src/overcooked_demo/server/*.log
+overcooked_demo/server/game_logs/
+overcooked_demo/server/game_trajectories/
+overcooked_demo/server/*.log
+logs/
+src/reasoning_evals/results
+src/reasoning_evals/logs

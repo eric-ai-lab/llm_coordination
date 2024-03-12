@@ -23,23 +23,9 @@ setup(
             "data/graphics/*.json",
             "data/fonts/*.ttf",
         ],
+        "reasong_evals": [
+            "data/*.csv"
+        ]
     },
-    install_requires=[
-        "numpy",
-        "scipy",
-        "tqdm",
-        "gym",
-        "pettingzoo",
-        "ipython",
-        "ipywidgets",
-        "GitPython",
-        "memory_profiler",
-        "sacred",
-        "pymongo",
-        "matplotlib",
-        "requests",
-        "seaborn==0.9.0",
-        "protobuf",
-        "openai"
-    ],
+
 )
