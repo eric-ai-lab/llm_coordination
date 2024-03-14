@@ -177,6 +177,7 @@ reproduced_results/
 overcooked_demo/server/game_logs/
 overcooked_demo/server/game_trajectories/
 overcooked_demo/server/*.log
+overcooked_demo/server/*.txt
 logs/
 src/reasoning_evals/results
 src/reasoning_evals/logs

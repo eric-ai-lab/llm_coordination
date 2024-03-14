@@ -159,11 +159,11 @@ class LLMActionManager(object):
         if self.should_get_stage_from_llm:
             self.get_stage_from_llm(state, other_player_message)         
 
-        if self.current_stage == 'wait.':
+        if 'wait' in self.current_stage.lower():
             self.selected_action = Action.STAY 
             self.should_get_stage_from_llm = True 
         
-        elif self.current_stage == 'move away.':
+        elif 'away' in self.current_stage.lower():
             self.selected_action = self.move_away_deterministic()
             self.should_get_stage_from_llm = True
 
@@ -212,7 +212,7 @@ class LLMActionManager(object):
         #     self.should_get_stage_from_llm = True 
         
         # Handle case goal_agent_a = goal_agent_b
-        if self.prev_directive != 'wait.' and self.prev_selection_action != Action.INTERACT and self.selected_action != Action.INTERACT and self.current_stage not in ['wait.']:
+        if 'wait' not in self.prev_directive and self.prev_selection_action != Action.INTERACT and self.selected_action != Action.INTERACT and 'wait' not in self.current_stage:
             if self.player_position == self.prev_position and self.prev_orienation == self.player_orientation and self.should_get_stage_from_llm == False:
                 if int(self.player_id) == 1:
                     print(f"Case 2 stalemate. info prev_directive - {self.prev_directive} prev_selected_action - {self.prev_selection_action} - current_stage - {self.current_stage}")
@@ -753,12 +753,13 @@ class LLMActionManager(object):
                 min_dest = p
         
         if min_dest == other_player_position:
-            min_dist = 'blocked'
+            min_dist = f'{min_dist} units away, but blocked'
             # TODO: Uncomment this later and see how to fix  
             if len(shortest_distances.keys())>1:
                 s_distances = [dd for pp, dd in shortest_distances.items() if (pp != min_dest and dd != math.inf)]
                 if len(s_distances)>0:
                     min_dist = min(s_distances)
+
                 
         
         elif min_dist == math.inf:

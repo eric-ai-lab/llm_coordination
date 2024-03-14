@@ -695,6 +695,7 @@ from flask import Flask, jsonify, render_template, request
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from game import Game, OvercookedGame, OvercookedTutorial
 from utils import ThreadSafeDict, ThreadSafeSet
+import time 
 
 ### Thoughts -- where I'll log potential issues/ideas as they come up
 # Should make game driver code more error robust -- if overcooked randomlly errors we should catch it and report it to user
@@ -1334,7 +1335,7 @@ def play_game(game: OvercookedGame, fps=10):
             print('num time steps are: ', num_time_steps)
             if num_time_steps >= 400:
                 status = Game.Status.DONE
-        sleep_time = 2
+        sleep_time = 1.
         # if num_time_steps <= 130:
         #     sleep_time = 0.1
         
@@ -1360,4 +1361,6 @@ if __name__ == "__main__":
     # atexit.register(on_exit)
 
     # https://localhost:80 is external facing address regardless of build environment
+    start_time = time.time()
     socketio.run(app, host=host, port=port, log_output=app.config["DEBUG"])
+    print(f'THE FULL GAME TOOK: {time.time() - start_time} Seconds')
