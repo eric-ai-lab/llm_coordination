@@ -77,6 +77,12 @@ EnvDescriptions= {
     'centre_pots': 'Environment Details: There are 2 onion dispenser (o0, 1), 2 cookers (c0, c1), 2 plate dispensers (p0, 1) and 2 delivery areas (d0, d1). Additionally there are kitchen counters (k0 to k14) which can be used to temporarily store onions and plates while you do something else. ', 
 }
 
+EnvDescriptions_SingleAgentAblation = {
+    'cramped_room': 'The environment is rectangular with 2 onions dispensers (o0, o1), cooker (c0), plate dispenser (p0) and delivery area (d0). Additionally there are kitchen counters (k0 to k8) which can be used to temporarily store onions and plates while you do something else. Objects on counters can be picked up later and should be considered as they may be closer than items in dispensers.',
+
+    'forced_coordination' : 'The environment is split into two partitions, one with each player. In the right partition, Alice has access to cookers (c0, c1),  delivery area (d0) and kitchen counters (k6, k8, k12). In the left partition, Bob has access to onion dispensers (o0, o1), plate dispenser (p0) and kitchen counters (k1, k10). Kitchen counters can be used to temporarily store onions and plates while you do something else. Both players have access to shared counters (s0, s1, s2) which can be used to transfer onions and plates to the other player depending on the situation. Note that the objects on the shared counters can be accessed by both players. ',
+}
+
 class LLMManager:
     def __init__(self, model_name, model_type, cache_dir, temperature=0.6, do_sample=True, max_new_tokens=1000, top_p=0.9, frequency_penalty=0.0, presence_penalty=0.0, api_server=True):
         self.model_name = model_name 
@@ -90,6 +96,7 @@ class LLMManager:
         self.presence_penalty = presence_penalty
         self.api_server = api_server
         self.device = 'cuda'
+        
         self.cost = 0
         if self.model_type == 'openai':
             self.akey = os.getenv("AZURE_OPENAI_ENDPOINT")
@@ -104,11 +111,12 @@ class LLMManager:
         else:
             self.client = OpenAI(
                 api_key="EMPTY",
-                base_url="http://localhost:8000/v1"
+                base_url="http://localhost:8006/v1"
             )
             self.inference_fn = self.run_openai_inference                    
 
     def run_openai_inference(self, messages):
+        api_call_start = time.time()
         completion = self.client.chat.completions.create(
             messages = messages,
             model=self.model_name,
@@ -117,6 +125,7 @@ class LLMManager:
             frequency_penalty=self.frequency_penalty,
             presence_penalty=self.presence_penalty
         )
+        print(f"{bcolors.FAIL}LLM INFERENCE TIME: {time.time() - api_call_start}{bcolors.ENDC}")
         # print("INFERENCE STRING: ", completion.choices[0].message.content)
         total_tokens = completion.usage.total_tokens
         cur_cost =  0.011 * (total_tokens / 1000)
@@ -141,11 +150,12 @@ class LLMAgent:
         # Enable kitchen counters only for GPT-4, other models cannot handle the complexity
         self.enable_kitchen_counters = True   
         self.explicit_help = False 
+        self.single_agent_ablation = True 
 
-        # self.model = 'gpt-4-0125'
-        # self.model_name = 'gpt-4-0125'
-        self.model = 'gpt-35-turbo'
-        self.model_name = 'gpt-35-turbo'
+        self.model = 'gpt-4-0125'
+        self.model_name = 'gpt-4-0125'
+        # self.model = 'gpt-35-turbo'
+        # self.model_name = 'gpt-35-turbo'
         self.model_type = 'openai'
         # self.model_name = 'mistralai/Mixtral-8x7B-Instruct-v0.1'
         # self.model_type = 'mistral'
@@ -204,7 +214,11 @@ class LLMAgent:
         2. We will try to be efficient and prepare for the next soup while the current soup is cooking. 
         '''
 
-        self.base_prompt = f'''I am {self.player_names[self.player_id]}. I am playing the game Overcooked with my partner {self.player_names[self.other_player_id]}. Overcooked has the following rules: {self.rules}. We have agreed to follow the following conventions: {self.conventions}. I'll provide my action history, current state, teammate's status, and my possible actions. Help me select the best action from the list. Format your response as: Explanation:<Brief explanation for my next action>. Action: <action>. Only select one action. Do not say anything else. Got it?'''
+        # With COT
+        # self.base_prompt = f'''I am {self.player_names[self.player_id]}. I am playing the game Overcooked with my partner {self.player_names[self.other_player_id]}. Overcooked has the following rules: {self.rules}. We have agreed to follow the following conventions: {self.conventions}. I'll provide my action history, current state, teammate's status, and my possible actions. Help me select the best action from the list. Format your response as: Explanation:<Brief explanation for my next action>. Action: <action>. Only select one action. Do not say anything else. Got it?'''
+
+        # Without COT
+        self.base_prompt = f'''I am {self.player_names[self.player_id]}. I am playing the game Overcooked with my partner {self.player_names[self.other_player_id]}. Overcooked has the following rules: {self.rules}. We have agreed to follow the following conventions: {self.conventions}. I'll provide my action history, current state, teammate's status, and my possible actions. Help me select the best action from the list. Format your response as: Action: <action>. Only select one action. Do not say anything else. Got it?'''
 
         # self.base_prompt = f'''I am {self.player_names[self.player_id]}. I am playing the game Overcooked with my partner {self.player_names[self.other_player_id]}. Overcooked has the following rules: {self.rules}. We have agreed to follow the following conventions: {self.conventions}. I'll provide my action history, current state, teammate's status, and my possible actions. Help me select the best action from the list. Format your response as: Action: <action>. Only select one action. Do not say anything else. Got it?'''
 
@@ -473,10 +487,85 @@ class LLMAgent:
     def _add_held_object_info(self, state_for_llm):
 
         description = f'''<Inventory>: I am holding {state_for_llm[self.player_id ]['held_object']}. {self.player_names[self.other_player_id]} is holding {state_for_llm[self.other_player_id ]['held_object']}. '''
+        if self.single_agent_ablation:
+            description = f'''<Inventory>: I am holding {state_for_llm[self.player_id ]['held_object']}. '''
         
         add_to_dict_list(self.log_csv_dict, f"player_held_object", state_for_llm[self.player_id ]['held_object'])
         add_to_dict_list(self.log_csv_dict, f"other_player_held_object", state_for_llm[self.other_player_id ]['held_object'])
         return description
+    
+    def _add_kitchen_facility_info_single_agent_ablation(self, state_for_llm):
+        # TODO: Add kitchen counter distances to both Bob and Alice's
+        self.empty_kitchen_counters = []
+        self.empty_kitchen_counter_distances = []
+        description = f"<My location information:> "
+        for obj_type in ['onion_dispenser', 'plate_dispenser', 'delivery_zone', 'cooker', 'storage_counter', 'gate']:
+            for idx, d in enumerate(state_for_llm['distances'][obj_type]):
+                if d[0] == 'infinite':
+                    description += f"{obj_type[0]}{idx} is inaccessible. "
+                elif 'blocked' in d[0]:
+                    description += f"{obj_type[0]}{idx} is {d[0]}"
+                else:
+                    description += f"{obj_type[0]}{idx} is {d[0]} units away. "
+
+                add_to_dict_list(self.log_csv_dict, f"{obj_type[0]}{idx}_distance_from_{self.player_names[self.player_id]}", str(d[0]))
+
+            
+        description += f"\n<Environment Details>: "
+        for obj_type in ['cooker', 'storage_counter', 'kitchen_counter', 'gate']:
+            for idx, d in enumerate(state_for_llm['distances'][obj_type]):
+                if obj_type == 'cooker':
+                        description += f"c{idx} contains {state_for_llm['num_onions_in_pot'][idx]} out of 3 onions. "
+                        add_to_dict_list(self.log_csv_dict, f"c{idx}_num_onions", state_for_llm['num_onions_in_pot'][idx])
+                        description += f"c{idx} is {state_for_llm['cooker_status'][idx]}. "
+                        add_to_dict_list(self.log_csv_dict, f"c{idx}_cooker_status", state_for_llm['cooker_status'][idx])
+                        description += f"soup in c{idx} is {state_for_llm['soup_in_cooker_status'][idx]}. "
+                        # if state_for_llm['soup_in_cooker_status'][idx] == 'still cooking':
+                        #     description += f"soup in c{idx} needs {state_for_llm['soup_in_cooker_remaining_time'][idx]} timesteps to cook. "
+                        add_to_dict_list(self.log_csv_dict, f"c{idx}_soup_in_cooker_status", state_for_llm['soup_in_cooker_status'][idx])
+                if self.enable_kitchen_counters:
+                    if obj_type == 'kitchen_counter':
+                        if state_for_llm['kitchen_counter_objects'][idx] != 'empty':
+                            if d[0] == 'infinite':
+                                description += f'k{idx} is inaccessible. '
+                            elif 'blocked' in d[0]:
+                                description += f"k{idx} is {d[0]} " 
+                            else:
+                                description += f"k{idx} is {d[0]} units away. "
+                                description += f"k{idx} contains {state_for_llm['kitchen_counter_objects'][idx]}. " 
+                            self.empty_kitchen_counter_distances.append(float('inf'))
+                        else:
+                            if d[0] in ['infinite'] or 'blocked' in d[0]:
+                                self.empty_kitchen_counter_distances.append(float('inf'))
+                            else:
+                                self.empty_kitchen_counter_distances.append(int(d[0]))
+                                self.empty_kitchen_counters.append(f'k{idx}')
+                
+                if obj_type == 'gate':
+                    if d[0] not in ['infinite']:
+                        description += f"g{idx} is {state_for_llm['gate_status'][idx]}. "
+                        if state_for_llm['gate_status'][idx] == 'open':
+                            description += f"g{idx} will stay open for {10 - state_for_llm['gate_open_time'][idx]} timesteps. "
+
+                if self.layout_name in ['forced_coordination', 'counter_circuit_o_1order', 'soup_passing']:   
+                    if obj_type == 'storage_counter':
+                        if state_for_llm['storage_counter_objects'][idx] == 'empty':
+                            description += f"s{idx} is empty. "
+                        else:
+                            description += f"s{idx} contains {state_for_llm['storage_counter_objects'][idx]}. "
+                        add_to_dict_list(self.log_csv_dict, f"s{idx} object", state_for_llm['storage_counter_objects'][idx]) 
+
+                # When there are no kitchen counters:
+        if self.enable_kitchen_counters:
+            if len(self.empty_kitchen_counter_distances) > 0:
+                closest_kitchen_counter = self.empty_kitchen_counter_distances.index(min(self.empty_kitchen_counter_distances))
+                distance_to_closest_kitchen_counter = min(self.empty_kitchen_counter_distances)
+                # print('Number of kitchen counters: ', len(self.empty_kitchen_counter_distances))
+                if distance_to_closest_kitchen_counter != float('inf'):
+                    description += f'Closest empty kitchen counter k{closest_kitchen_counter} is {distance_to_closest_kitchen_counter} units away. '
+
+        return description
+
 
     def _add_kitchen_facility_info(self, state_for_llm):
         # TODO: Add kitchen counter distances to both Bob and Alice's
@@ -494,18 +583,18 @@ class LLMAgent:
 
                 add_to_dict_list(self.log_csv_dict, f"{obj_type[0]}{idx}_distance_from_{self.player_names[self.player_id]}", str(d[0]))
     
-                
-        description += f"\n<{self.player_names[self.other_player_id]}'s location information>: "
-        for obj_type in ['onion_dispenser', 'plate_dispenser', 'delivery_zone', 'cooker', 'storage_counter', 'gate']:
-            for idx, d in enumerate(state_for_llm['distances'][obj_type]):
-                if d[1] == 'infinite':
-                    description += f"{obj_type[0]}{idx} is inaccessible. "
-                elif 'blocked' in d[1]:
-                    description += f"{obj_type[0]}{idx} is {d[0]} by {self.player_names[self.player_id]}. "  
-                else:
-                    description += f"{obj_type[0]}{idx} is {d[1]} units away. "
-                
-                add_to_dict_list(self.log_csv_dict, f"{obj_type[0]}{idx}_distance_from_{self.player_names[self.other_player_id]}", str(d[1]))
+        if not self.single_agent_ablation:
+            description += f"\n<{self.player_names[self.other_player_id]}'s location information>: "
+            for obj_type in ['onion_dispenser', 'plate_dispenser', 'delivery_zone', 'cooker', 'storage_counter', 'gate']:
+                for idx, d in enumerate(state_for_llm['distances'][obj_type]):
+                    if d[1] == 'infinite':
+                        description += f"{obj_type[0]}{idx} is inaccessible. "
+                    elif 'blocked' in d[1]:
+                        description += f"{obj_type[0]}{idx} is {d[0]} by {self.player_names[self.player_id]}. "  
+                    else:
+                        description += f"{obj_type[0]}{idx} is {d[1]} units away. "
+                    
+                    add_to_dict_list(self.log_csv_dict, f"{obj_type[0]}{idx}_distance_from_{self.player_names[self.other_player_id]}", str(d[1]))
             
         description += f"\n<Environment Details>: "
         for obj_type in ['cooker', 'storage_counter', 'kitchen_counter', 'gate']:
@@ -577,7 +666,11 @@ class LLMAgent:
         description = self._add_history() 
         # Add state information in natural language 
         description += self._add_held_object_info(state_for_llm)
-        description += self._add_kitchen_facility_info(state_for_llm)
+        if not self.single_agent_ablation:
+            description += self._add_kitchen_facility_info(state_for_llm)
+        else:
+            description += self._add_kitchen_facility_info_single_agent_ablation(state_for_llm)
+
 
         # get available actions based on current state and add the information to the description
         self.available_actions_list = self._get_available_actions(state_for_llm, None)

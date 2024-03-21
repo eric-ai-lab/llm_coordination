@@ -1333,7 +1333,7 @@ def play_game(game: OvercookedGame, fps=10):
             num_time_steps += 1
             print('current tick is : ', game.curr_tick)
             print('num time steps are: ', num_time_steps)
-            if num_time_steps >= 400:
+            if num_time_steps >= 200:
                 status = Game.Status.DONE
         sleep_time = 1.
         # if num_time_steps <= 130:
