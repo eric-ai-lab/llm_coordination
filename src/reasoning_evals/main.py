@@ -527,7 +527,7 @@ if __name__ == '__main__':
         model_nm = model.split('/')[-1]
     else:
         model_nm = model
-    evaluator = TestLLMCoordination(df, game_name, model, model_type, f'/home/saaket/llm_coordination_suite/single_turn_evals/logs/{game_name}_{model_type}_{model_nm}')
+    evaluator = TestLLMCoordination(df, game_name, model, model_type, f'/home/anthony/llm_coordination/single_turn_evals/logs/{game_name}_{model_type}_{model_nm}')
     results = evaluator.evaluate_llm()
     result_table = format_results(results)
     print('TEST FILE: ', game_name)
