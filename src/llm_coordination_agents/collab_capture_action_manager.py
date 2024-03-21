@@ -1,6 +1,6 @@
 import random 
 import time 
-from collab_capture_agent import LLMAgent
+from llm_coordination_agents.collab_capture_agent import LLMAgent
 class Environment:
     def __init__(self):
         self.rooms = {
@@ -33,9 +33,9 @@ class Environment:
         return [r for r in self.rooms[current_room] if self.is_door_open(current_room, r)]
 
     def get_action_options(self, current_room):
-        options = ['Stay'] + self.get_accessible_rooms(current_room)
+        options = ['Stay in current room'] + self.get_accessible_rooms(current_room)
         if current_room in self.door_controls.values():
-            options.append(f"Press button in Room {current_room}")
+            options.append(f"Press button in room {current_room}")
         return options
     
     def get_state_for_llm(self, alice, bob, thief):
@@ -51,6 +51,7 @@ class Environment:
 class Agent:
     def __init__(self, start_room, id, name, environment):
         self.current_room = start_room
+        self.previous_room = None
         self.next_room = start_room  # Where the agent plans to move next
         self.name = name
         self.id = id

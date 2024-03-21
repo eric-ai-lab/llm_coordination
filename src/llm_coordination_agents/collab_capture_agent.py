@@ -62,7 +62,7 @@ class LLMManager:
         print(f"{bcolors.FAIL}LLM INFERENCE TIME: {time.time() - api_call_start}{bcolors.ENDC}")
         # print("INFERENCE STRING: ", completion.choices[0].message.content)
         total_tokens = completion.usage.total_tokens
-        cur_cost =  0.011 * (total_tokens / 1000)
+        cur_cost =  0.015 * (total_tokens / 1000)
         self.cost += cur_cost 
         print(f"COST SO FAR: {self.cost} USD")
         return completion.choices[0].message.content
@@ -80,14 +80,14 @@ class LLMAgent:
         self.write_to_cache = False 
         self.save_trajectory = True # True 
 
-        # self.model = 'gpt-4-0125'
-        # self.model_name = 'gpt-4-0125'
+        self.model = 'gpt-4-0125'
+        self.model_name = 'gpt-4-0125'
         # self.model = 'gpt-35-turbo'
         # self.model_name = 'gpt-35-turbo'
-        # self.model_type = 'openai'
-        self.model_name = 'mistralai/Mixtral-8x7B-Instruct-v0.1'
-        self.model_type = 'mistral'
-        self.model = 'mixtral'
+        self.model_type = 'openai'
+        # self.model_name = 'mistralai/Mixtral-8x7B-Instruct-v0.1'
+        # self.model_type = 'mistral'
+        # self.model = 'mixtral'
 
         self.llm = LLMManager(model_name=self.model_name, model_type=self.model_type, cache_dir=os.getenv('HF_HOME'))
 
@@ -118,14 +118,14 @@ class LLMAgent:
         1. A thief is caught if a player is in the same room as the thief or if the thief and a player in connected rooms move towards each other. 
         2. The environment is fully visible to all three entities. In each turn, player and the thief simultaneously perform one action.
         3. The thief always takes the greediest action to move away from the player closest to him. 
-        4. Doors can be either open or closed.
+        4. Doors can be either open or closed. 
         5. If the door is closed, no one can pass, creating a dead end.
-        6. The button opens/closes the door.
+        6. Pressing the button closes an open door and opens a closed door. 
         7. A button in a room can only be pressed if player is in that room
         8. All rooms are connected by pathways with same length, and everyone can only move to connected rooms in each turn.'''
 
         # Without COT
-        self.base_prompt = f'''I (Alice) am playing the game """"Collab Capture"""" with Bob. I want to coordinate with Bob to catch the thief in the environment in the minimum number of steps. Coordination between Bob and Alice is important to trap the thief. 
+        self.base_prompt = f'''I {self.player_name} am playing the game """"Collab Capture"""" with Bob. I want to coordinate with Bob to catch the thief in the environment in the minimum number of steps. Coordination between Bob and Alice is important to trap the thief. 
         Environment Layout:
         - Room 1 directly connects to Room 2 and Room 6.
         - Room 2 directly connects to Room 1, Room 3.
@@ -136,8 +136,8 @@ class LLMAgent:
         - Room 7 directly connects Room 5, Room 8.
         - Room 8 directly connects to Room 7.
         - Room 9 directly connects Room 6
-        There is a door between Room 1 and Room 2 controlled by a button in Room 9. There is a door between Room 3 and Room 4 controlled by a button in Room 8. Help me (Alice) select my next action. Format your response as: 
-        Analysis: <explanation for your next action>.
+        There is a door between Room 1 and Room 2 controlled by a button in Room 9. There is a door between Room 3 and Room 4 controlled by a button in Room 8. Help me {self.player_name} select my next action. Format your response as: 
+        Analysis: <brief explanation for your next action>.
         Action: <your selected action from the list>.'''
 
         self.assistant_response_initial = f'''Got it!'''
@@ -170,7 +170,7 @@ class LLMAgent:
             if str(action).isdigit():
                 self.available_actions_list.append(f'{chr(65+i)}. Move to room {action}.')
             else:
-                self.available_actions_list.append(f'{chr(65+i)}. Stay in current room.')
+                self.available_actions_list.append(f'{chr(65+i)} {action}')
         
         for action in self.available_actions_list:
             description += f'{action}\n'
@@ -200,11 +200,11 @@ class LLMAgent:
     def _state_to_description(self, state_for_llm):
         
         # Where is everyone
-        description = f"I {self.player_name} am in {state_for_llm['player_locs'][self.player_name]}. {self.other_player_name} is in {state_for_llm['player_locs'][self.other_player_name]}. Thief is in {state_for_llm['player_locs']['Thief']}. "
+        description = f"I {self.player_name} am in room {state_for_llm['player_locs'][self.player_name]}. {self.other_player_name} is in room {state_for_llm['player_locs'][self.other_player_name]}. Thief is in room {state_for_llm['player_locs']['Thief']}. "
 
         # Which doors are open, which are closed 
         for door in state_for_llm['door_states']:
-            description += f"Door between room {door[0]} and {door[1]} is {state_for_llm['door_states'][door]}. "
+            description += f"Door between room {door[0]} and room {door[1]} is {state_for_llm['door_states'][door]}. "
         
         description += f'\n{self._get_available_actions(state_for_llm)}'
 
@@ -222,7 +222,7 @@ class LLMAgent:
 
         if selected_action in self.available_actions_list:
             selected_move_idx = self.available_actions_list.index(selected_action)
-
+        print("SELECTED ACTION: ", state_for_llm['available_actions'][self.player_name][selected_move_idx])
         return state_for_llm['available_actions'][self.player_name][selected_move_idx]
 
 

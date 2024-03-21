@@ -152,14 +152,14 @@ class LLMAgent:
         self.explicit_help = False 
         self.single_agent_ablation = True 
 
-        self.model = 'gpt-4-0125'
-        self.model_name = 'gpt-4-0125'
+        # self.model = 'gpt-4-0125'
+        # self.model_name = 'gpt-4-0125'
         # self.model = 'gpt-35-turbo'
         # self.model_name = 'gpt-35-turbo'
-        self.model_type = 'openai'
-        # self.model_name = 'mistralai/Mixtral-8x7B-Instruct-v0.1'
-        # self.model_type = 'mistral'
-        # self.model = 'mixtral'
+        # self.model_type = 'openai'
+        self.model_name = 'mistralai/Mixtral-8x7B-Instruct-v0.1'
+        self.model_type = 'mistral'
+        self.model = 'mixtral'
 
         self.llm = LLMManager(model_name=self.model_name, model_type=self.model_type, cache_dir=os.getenv('HF_HOME'))
 
