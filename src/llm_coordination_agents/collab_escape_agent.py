@@ -1,3 +1,4 @@
+import time
 import datetime 
 import re 
 import openai
@@ -21,7 +22,26 @@ class bcolors:
 
 
 class LLMAgent():
-    def __init__(self, player_id):
+    def __init__(self, player_id, temperature=0.6, do_sample=True, max_new_tokens=1000, top_p=0.9, frequency_penalty=0.0, presence_penalty=0.0, api_server=True,  cache_dir=os.getenv('HF_HOME')):
+        self.temperature = temperature
+        self.cache_dir = cache_dir
+        self.do_sample = do_sample
+        self.max_new_tokens = max_new_tokens
+        self.top_p = top_p
+        self.frequency_penalty = frequency_penalty
+        self.presence_penalty = presence_penalty
+        self.api_server = api_server
+        self.device = 'cuda'
+
+        # self.model = 'gpt-4-0125'
+        # self.model_name = 'gpt-4-0125'
+        # self.model = 'gpt-35-turbo'
+        # self.model_name = 'gpt-35-turbo'
+        # self.model_type = 'openai'
+        self.model_name = 'mistralai/Mixtral-8x7B-Instruct-v0.1'
+        self.model_type = 'mistral'
+        self.model = 'mixtral'
+
         self.player_id = player_id
         self.player_names = ['Alice', 'Bob']
         self.player_name = self.player_names[player_id]
@@ -44,11 +64,17 @@ class LLMAgent():
 
         self.action_regex = r"Action:\s*(.*)"
 
-        self.message = [
-                    {"role": "system", "content": self.llm_system_prompt},
-                    {"role": "user", "content": self.base_prompt},
-                    {"role": "assistant", "content": self.assistant_response_initial},
-                ]
+        if self.model_type == 'openai':
+            self.message = [
+                        {"role": "system", "content": self.llm_system_prompt},
+                        {"role": "user", "content": self.base_prompt},
+                        {"role": "assistant", "content": self.assistant_response_initial},
+                    ]
+        else:
+            self.message = [
+                        {"role": "user", "content": self.base_prompt},
+                        {"role": "assistant", "content": self.assistant_response_initial},
+                    ]
         
         if self.model_type == 'openai':
             self.akey = os.getenv("AZURE_OPENAI_ENDPOINT")
@@ -59,16 +85,36 @@ class LLMAgent():
                 api_key=os.getenv("AZURE_OPENAI_API_KEY"),  
                 api_version="2023-05-15"
             )
-            #self.inference_fn = self.run_openai_inference
         else:
             self.client = OpenAI(
                 api_key="EMPTY",
                 base_url="http://localhost:8006/v1"
             )
+        self.inference_fn = self.run_openai_inference
         self.num_api_calls = 0
         self.all_actions = [f'move to {r}' for r in ["room 1", "room 2", "room 3", "room 4", "room 5", "room 6", "room 7"]]
         self.all_actions += ['fix generator in room 1', 'fix generator in room 2']
         self.all_actions += ['wait']
+
+    def run_openai_inference(self, messages):
+        api_call_start = time.time()
+        completion = self.client.chat.completions.create(
+            messages = messages,
+            model=self.model_name,
+            temperature=self.temperature,
+            top_p=self.top_p,
+            frequency_penalty=self.frequency_penalty,
+            presence_penalty=self.presence_penalty
+        )
+        print(f"{bcolors.FAIL}LLM INFERENCE TIME: {time.time() - api_call_start}{bcolors.ENDC}")
+        # print("INFERENCE STRING: ", completion.choices[0].message.content)
+        self.num_api_calls += 1
+        print(f"{bcolors.OKBLUE}Number of API calls made by {self.player_name}: {bcolors.ENDC}", self.num_api_calls)
+        total_tokens = completion.usage.total_tokens
+        cur_cost =  0.011 * (total_tokens / 1000)
+        self.cost += cur_cost 
+        print(f"COST SO FAR: {self.cost} USD")
+        return completion.choices[0].message.content
         
     def _get_available_actions(self, state):
         
@@ -147,18 +193,11 @@ class LLMAgent():
         response_string = ''
         message = ''
         print(f"{bcolors.FAIL}{state_description}{bcolors.ENDC}")
+        # Running inference here
         try:
-            response = openai.ChatCompletion.create(
-                model=self.model,
-                messages=self.message + [{"role": "user", "content": state_description}],
-                temperature=0.6
-            )
-            
-            self.num_api_calls += 1
-            print(f"{bcolors.OKBLUE}Number of API calls made by {self.player_name}: {bcolors.ENDC}", self.num_api_calls)
-            response_string = response["choices"][0]["message"]["content"]
+            messages = self.message + [{"role": "user", "content": state_description}]
+            response = self.llm.inference_fn(messages=messages)
             print(f'''{bcolors.WARNING}LLM RESPONSE: {response_string}{bcolors.ENDC}''')
-
             match = re.search(self.action_regex, response_string.strip())
             if match:
                 action = match.group(1).strip().replace('.', '').lower()
