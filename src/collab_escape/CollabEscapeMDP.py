@@ -1,7 +1,8 @@
 import random
 from llm_coordination_agents.collab_escape_agent import LLMAgent
 import re 
-import time 
+import time
+import os 
 
 class Room:
     def __init__(self, name, has_generator=False):
@@ -110,7 +111,7 @@ class Game:
             "exit gate": False
         }
 
-    # saves updated state values only, doesn't actually progress game state
+    # saves updated state values only, doesn't progress game state
     def update_state(self):
         self.state["Alice"] = self.alice
         self.state["Bob"] = self.bob
@@ -152,6 +153,7 @@ class Game:
 
     # handle main gameplay logic and flow
     def play(self):
+        # create agents
         self.alice_llm_agent = LLMAgent(player_id=0)
         self.bob_llm_agent = LLMAgent(player_id=1)
         while not self.game_over:
@@ -163,14 +165,12 @@ class Game:
             
             # Adversary's turn
             self.adversary.move_greedily(current_state)
-            
-            # Alice's turn
             killer_info = ''
             killer_info += 'Currently, we have information that the killer will certainly move to the room where ' + self.adversary.target_name + ' is. '
 
+            # Inference for both player's action selection
+            # Alice's turn
             alice_action_string = self.alice_llm_agent.get_next_move(current_state, killer_info)
-
-
             
             # Bob's turn
             bob_action_string = self.bob_llm_agent.get_next_move(current_state, killer_info)
@@ -180,7 +180,7 @@ class Game:
             
             
             
-            # Reset generators
+            # Reset generators fix count if its fixing stopped before completion
             reset_generator_list = self.rooms.copy()
             if "fix" in alice_action_string:
                 reset_generator_list.pop(self.alice.current_room.name)
@@ -197,7 +197,7 @@ class Game:
                     room.fix_count = 0
 
             
-            
+            # execute action {move, fix, wait} for Alice, then Bob
             if 'move' in alice_action_string:
                 target_room = self.extract_room(alice_action_string)
                 self.alice.move(self.rooms[target_room])
