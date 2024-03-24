@@ -5,4 +5,4 @@ class CollabEscapeActionManager():
         self.mdp = mdp 
         self.llm_agent = LLMAgent(player_id, mdp)
     
-    def get_next_move(self, state)
+    #def get_next_move(self, state)
