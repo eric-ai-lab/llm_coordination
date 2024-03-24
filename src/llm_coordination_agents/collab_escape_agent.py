@@ -1,10 +1,12 @@
 import datetime 
 import re 
-import openai 
+import openai
+from openai import OpenAI, AzureOpenAI
 
 import os 
-openai.api_key = os.environ['API_KEY']
-openai.organization = os.environ['ORGANIZATION']
+
+#openai.api_key = os.environ['API_KEY']
+#openai.organization = os.environ['ORGANIZATION']
 
 class bcolors:
     HEADER = '\033[95m'
@@ -28,7 +30,7 @@ class LLMAgent():
         
         self.killer_info = ''
         
-        self.base_prompt = '''In the game Collab Escape. We must cooperate with each other to repair generators and escape the map. We win even if one of us escapes the map.
+        self.base_prompt = '''In the game Collab Escape. We must cooperate with each other to repair generators and escape the map. We win even if only one of us escapes the map.
 
         Environment Details: There are 7 rooms (room 1 to 7). Room 1 and 2 have generators, and room 7 has the exit gate. The rooms are connected by pathways, and you can only move to adjacent rooms. Room 1 is connected to room 2, 5, and 7; room 2 is connected to room 1, 6, and 3; room 3 is connected to room 2, 4, 5, and 7; room 4 is connected to room 3 and 5; room 5 is connected to room 1, 3, 4, and 6; room 6 is connected to room 2, 5, and 7; room 7 is connected to room 1, 3, and 6.
 
@@ -47,8 +49,22 @@ class LLMAgent():
                     {"role": "user", "content": self.base_prompt},
                     {"role": "assistant", "content": self.assistant_response_initial},
                 ]
-        self.model = 'gpt-4'
-        # self.model = 'gpt-3.5-turbo'
+        
+        if self.model_type == 'openai':
+            self.akey = os.getenv("AZURE_OPENAI_ENDPOINT")
+            self.org = os.getenv("AZURE_OPENAI_API_KEY")
+            # self.client = OpenAI(api_key = self.akey, organization = self.org)
+            self.client = AzureOpenAI(
+                azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT"), 
+                api_key=os.getenv("AZURE_OPENAI_API_KEY"),  
+                api_version="2023-05-15"
+            )
+            #self.inference_fn = self.run_openai_inference
+        else:
+            self.client = OpenAI(
+                api_key="EMPTY",
+                base_url="http://localhost:8006/v1"
+            )
         self.num_api_calls = 0
         self.all_actions = [f'move to {r}' for r in ["room 1", "room 2", "room 3", "room 4", "room 5", "room 6", "room 7"]]
         self.all_actions += ['fix generator in room 1', 'fix generator in room 2']
@@ -148,7 +164,7 @@ class LLMAgent():
                 action = match.group(1).strip().replace('.', '').lower()
             else:
                 action = 'wait'
-        except:
+        except Exception as e:
             selected_action = 'wait' 
             print(f'Failed to get response from openai api for player {self.player_id} due to {e}')
         print(self.all_actions)

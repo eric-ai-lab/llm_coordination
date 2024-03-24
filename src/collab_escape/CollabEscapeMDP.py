@@ -42,8 +42,10 @@ class Adversary:
         self.current_room = random.choice(self.current_room.adjacent_rooms)
     
     def move_greedily(self, state):
-        room_name_list =  [room.name for room in self.current_room.adjacent_rooms]
-        if state['Alice'].current_room.name in room_name_list and state['Bob'].current_room.name in room_name_list:
+        room_adj_list =  [room.name for room in self.current_room.adjacent_rooms]
+        
+        # Both alice and bob are near, pursue one of them
+        if state['Alice'].current_room.name in room_adj_list and state['Bob'].current_room.name in room_adj_list:
             if self.can_see['Alice'] and self.can_see['Bob']:
                 
                 self.current_room = state[self.target_name].current_room
@@ -56,17 +58,20 @@ class Adversary:
             else:
                 self.target_name = 'Alice'
                 self.current_room = state['Alice'].current_room
-            
-        elif state['Alice'].current_room.name in room_name_list:    
+        
+        # Alice is near, pursue
+        elif state['Alice'].current_room.name in room_adj_list:    
             self.current_room = state['Alice'].current_room
             self.target_name = 'Alice'
             self.can_see['Alice'] = True
             self.can_see['Bob'] = False
-        elif state['Bob'].current_room.name in room_name_list:
+        # Bob is near, pursue
+        elif state['Bob'].current_room.name in room_adj_list:
             self.current_room = state['Bob'].current_room
             self.target_name = 'Bob'
             self.can_see['Alice'] = False
             self.can_see['Bob'] = True
+        # Neither Bob nor Alice are nearby, explore
         else:
             self.current_room = random.choice(self.current_room.adjacent_rooms) 
             self.target_name = ''
@@ -105,6 +110,7 @@ class Game:
             "exit gate": False
         }
 
+    # saves updated state values only, doesn't actually progress game state
     def update_state(self):
         self.state["Alice"] = self.alice
         self.state["Bob"] = self.bob
@@ -112,7 +118,7 @@ class Game:
         self.state["Generators"] = {room.name: {"fixed": room.generator_fixed, "fix_count": room.fix_count} for room in self.rooms.values() if room.has_generator}
         self.state["exit gate"] = all(room.generator_fixed for room in self.rooms.values() if room.has_generator)
 
-
+    # does game state match game over conditions?
     def check_game_over(self):
         if self.adversary.current_room == self.alice.current_room or self.adversary.current_room == self.bob.current_room:
             print("Game Over: Adversary caught a player.")
@@ -127,6 +133,7 @@ class Game:
 
         return False
 
+    # get room number from selected action
     def extract_room(self, action_string):
         room_name = re.search(r"move to (.+)", action_string).group(1)
         return room_name
@@ -143,6 +150,7 @@ class Game:
         print(f"Exit Gate: {'Open' if self.state['exit gate'] else 'Closed'}")
         print("--------------\n")
 
+    # handle main gameplay logic and flow
     def play(self):
         self.alice_llm_agent = LLMAgent(player_id=0)
         self.bob_llm_agent = LLMAgent(player_id=1)
