@@ -110,10 +110,10 @@ class LLMAgent():
         # print("INFERENCE STRING: ", completion.choices[0].message.content)
         self.num_api_calls += 1
         print(f"{bcolors.OKBLUE}Number of API calls made by {self.player_name}: {bcolors.ENDC}", self.num_api_calls)
-        total_tokens = completion.usage.total_tokens
-        cur_cost =  0.011 * (total_tokens / 1000)
-        self.cost += cur_cost 
-        print(f"COST SO FAR: {self.cost} USD")
+        #total_tokens = completion.usage.total_tokens
+        #cur_cost =  0.011 * (total_tokens / 1000)
+        #self.cost += cur_cost 
+        #print(f"COST SO FAR: {self.cost} USD")
         return completion.choices[0].message.content
         
     def _get_available_actions(self, state):
@@ -190,21 +190,20 @@ class LLMAgent():
     
     def get_next_move(self, state, killer_info):
         state_description = self._state_to_description(state, killer_info)
-        response_string = ''
-        message = ''
+        response = ''
         print(f"{bcolors.FAIL}{state_description}{bcolors.ENDC}")
         # Running inference here
         try:
             messages = self.message + [{"role": "user", "content": state_description}]
-            response = self.llm.inference_fn(messages=messages)
-            print(f'''{bcolors.WARNING}LLM RESPONSE: {response_string}{bcolors.ENDC}''')
-            match = re.search(self.action_regex, response_string.strip())
+            response = self.inference_fn(messages=messages)
+            print(f'''{bcolors.WARNING}LLM RESPONSE: {response}{bcolors.ENDC}''')
+            match = re.search(self.action_regex, response.strip())
             if match:
                 action = match.group(1).strip().replace('.', '').lower()
             else:
                 action = 'wait'
         except Exception as e:
-            selected_action = 'wait' 
+            action = 'wait' 
             print(f'Failed to get response from openai api for player {self.player_id} due to {e}')
         print(self.all_actions)
         
