@@ -212,6 +212,8 @@ class LLMAgent():
                 selected_action = action 
             else:
                 selected_action = 'wait'
+        else:
+            selected_action = 'wait'
 
         return selected_action
 
