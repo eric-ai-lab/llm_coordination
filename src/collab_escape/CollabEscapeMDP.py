@@ -124,15 +124,15 @@ class Game:
         if self.adversary.current_room == self.alice.current_room or self.adversary.current_room == self.bob.current_room:
             print("Game Over: Adversary caught a player.")
             self.game_over = True
-            return True
+            return "loss"
 
         if self.state["exit gate"]:
             if self.alice.current_room.name == "room 7" or self.bob.current_room.name == "room 7":
                 print("Game Over: Players win!")
                 self.game_over = True
-                return True
+                return "win"
 
-        return False
+        return "continue"
 
     # get room number from selected action
     def extract_room(self, action_string):
@@ -156,6 +156,8 @@ class Game:
         # create agents
         self.alice_llm_agent = LLMAgent(player_id=0)
         self.bob_llm_agent = LLMAgent(player_id=1)
+
+        self.turn_count = 1
         while not self.game_over:
             # Update state
             # self.update_state()
@@ -217,12 +219,15 @@ class Game:
                 pass 
             
             # Check game over conditions
-            if self.check_game_over():
-                break
+            outcome = self.check_game_over
+            if outcome in ['loss' or 'win']:
+                return outcome, self.turn_count
 
             # Update state
             self.update_state()
             self.print_readable_state()
+
+            self.turn_count += 1
 
             time.sleep(2.)
 
