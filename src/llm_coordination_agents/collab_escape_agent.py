@@ -3,7 +3,7 @@ import datetime
 import re 
 import openai
 from openai import OpenAI, AzureOpenAI
-
+from fuzzywuzzy import process
 import os 
 
 #openai.api_key = os.environ['API_KEY']
@@ -187,6 +187,26 @@ class LLMAgent():
 
         return state_description
     
+
+    def find_best_match(self, action_string):
+        match = re.search(self.action_regex, action_string.strip())
+        if match:
+            selected_match = match.group(1).strip().lower()
+
+            # Sometimes model repeats Action: withing the action string
+            if 'action:' in selected_match.lower():
+                updated_action_regex = r"action:\s*(.*)"
+                match = re.search(updated_action_regex, selected_match.strip())
+                if match:
+                    selected_match = match.group(1).strip().lower()
+            ####
+            for action in self.available_actions_list:
+                if selected_match.lower() in action.lower():
+                    return action 
+            selected_move, score = process.extractOne(selected_match, self.available_actions_list)
+        else:
+            selected_move = 'wait'
+        return selected_move
     
     def get_next_move(self, state, killer_info):
         state_description = self._state_to_description(state, killer_info)
@@ -197,11 +217,7 @@ class LLMAgent():
             messages = self.message + [{"role": "user", "content": state_description}]
             response = self.inference_fn(messages=messages)
             print(f'''{bcolors.WARNING}LLM RESPONSE: {response}{bcolors.ENDC}''')
-            match = re.search(self.action_regex, response.strip())
-            if match:
-                action = match.group(1).strip().replace('.', '').lower()
-            else:
-                action = 'wait'
+            action = self.find_best_match(response)
         except Exception as e:
             action = 'wait' 
             print(f'Failed to get response from openai api for player {self.player_id} due to {e}')
