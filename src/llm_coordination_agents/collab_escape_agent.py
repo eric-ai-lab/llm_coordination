@@ -33,11 +33,11 @@ class LLMAgent():
         self.api_server = api_server
         self.device = 'cuda'
 
-        # self.model = 'gpt-4-0125'
-        # self.model_name = 'gpt-4-0125'
+        #self.model = 'gpt-4-0125'
+        #self.model_name = 'gpt-4-0125'
         # self.model = 'gpt-35-turbo'
         # self.model_name = 'gpt-35-turbo'
-        # self.model_type = 'openai'
+        #self.model_type = 'openai'
         self.model_name = 'mistralai/Mixtral-8x7B-Instruct-v0.1'
         self.model_type = 'mistral'
         self.model = 'mixtral'
@@ -50,31 +50,50 @@ class LLMAgent():
         
         self.killer_info = ''
         
-        self.base_prompt = '''In the game Collab Escape. We must cooperate with each other to repair generators and escape the map. We win even if only one of us escapes the map.
+        self.base_prompt = '''In the game Collab Escape, we must cooperate with each other to repair generators and escape the map. We win even if only one of us escapes the map.
 
-        Environment Details: There are 7 rooms (room 1 to 7). Room 1 and 2 have generators, and room 7 has the exit gate. The rooms are connected by pathways, and you can only move to adjacent rooms. Room 1 is connected to room 2, 5, and 7; room 2 is connected to room 1, 6, and 3; room 3 is connected to room 2, 4, 5, and 7; room 4 is connected to room 3 and 5; room 5 is connected to room 1, 3, 4, and 6; room 6 is connected to room 2, 5, and 7; room 7 is connected to room 1, 3, and 6.
+        Environment Details: There are 7 rooms (room 1 to 7). Room 1 and 5 have generators, and room 7 has the exit gate. The rooms are connected by pathways, and you can only move to adjacent rooms. Room 1 is connected to room 2 and 7; room 2 is connected to room 1 and 3; room 3 is connected to room 2, 4, and 6; room 4 is connected to room 3 and 5; room 5 is connected to room 4 and 6; room 6 is connected to room 3, 5, and 7; room 7 is connected to room 1 and 6.
 
-        As a survivor, my goal is to avoid the killer and move to rooms with generators, repair them, and reach the exit gate to escape. To fix a generator, it needs two consecutive repair actions. Survivors must also avoid being in the same room as the killer or an adjacent room, as the killer will move to catch any survivors they see in adjacent rooms. Being in the same room with the Killer results in an immediate loss.
+        As a survivor, my goal is to avoid the killer and move to rooms with generators, repair the generators, and reach the exit gate to escape. To fully repair a generator, it needs two consecutive fix actions (i.e. one must spend two consecutive turns fixing the generator in order for it be repaired). Survivors must also avoid being in the same room as the killer or an adjacent room, as the killer will move to catch any survivors they see in adjacent rooms. Being in the same room with the Killer results in an immediate loss.
 
-        In each turn, survivors and the killer simultaneously perform one action. I cannot know each other's actions ahead of time but can make educated guesses. To win the game I will need to protect teammate, fix generators, divert the killer, etc. Help me select the best action from the list, considering my priority. First, consider if the current room is safe from the killer and then format your response as "Action: move to room <number>" or "Action: fix generator in room <number>." Do not say anything else.'''
+        In each turn, survivors and the killer simultaneously perform one action. We cannot know each other's actions ahead of time but can make educated guesses. We should coordinate in order to fix generators, lure the killer away, etc.. '''
 
+        self.generator_prompt = self.base_prompt + '''Help me select the best action from the list, considering my priority. First, consider if the current room is safe from the killer and then format your response as "Action: move to room <number>" or "Action: fix generator in room <number>." Do not say anything else.'''
+        
         self.llm_system_prompt = "A chat between a human and an assistant. The assistant is correct and brief at all times."
+
+        self.partner_interpreter_base_prompt = f'''{self.base_prompt}
+        I am {self.player_name}, playing the game Collab Escape with {self.partner_name}. 
+        You are a Theory of Mind inference agent for our game. You will be provided with my partner's last action and the latest state information resulting from the previous turn. You will provide me with an explanation for my partner’s previous action along with their intention and implicit communication.
+        Format your response as:
+        Partner Action Explanation:<1 sentence explanation of partner action>
+        Suggestion:<What should I do next based on the perceived intention of my partner's action>.
+        '''
 
         self.assistant_response_initial = f'''Got it!'''
 
         self.action_regex = r"Action:\s*(.*)"
 
         if self.model_type == 'openai':
-            self.message = [
+            self.generator_message = [
                         {"role": "system", "content": self.llm_system_prompt},
-                        {"role": "user", "content": self.base_prompt},
+                        {"role": "user", "content": self.generator_prompt},
+                        {"role": "assistant", "content": self.assistant_response_initial},
+                    ]
+            self.partner_interpreter_message = [
+                        {"role": "system", "content": self.llm_system_prompt},
+                        {"role": "user", "content": self.partner_interpreter_base_prompt},
                         {"role": "assistant", "content": self.assistant_response_initial},
                     ]
         else:
-            self.message = [
-                        {"role": "user", "content": self.base_prompt},
+            self.generator_message = [
+                        {"role": "user", "content": self.generator_prompt},
                         {"role": "assistant", "content": self.assistant_response_initial},
-                    ]
+            ]
+            self.partner_interpreter_message = [
+                        {"role": "user", "content": self.partner_interpreter_base_prompt},
+                        {"role": "assistant", "content": self.assistant_response_initial},
+            ]
         
         if self.model_type == 'openai':
             self.akey = os.getenv("AZURE_OPENAI_ENDPOINT")
@@ -88,7 +107,7 @@ class LLMAgent():
         else:
             self.client = OpenAI(
                 api_key="EMPTY",
-                base_url="http://localhost:8006/v1"
+                base_url="http://localhost:8000/v1"
             )
         self.inference_fn = self.run_openai_inference
         self.num_api_calls = 0
@@ -107,13 +126,14 @@ class LLMAgent():
             presence_penalty=self.presence_penalty
         )
         print(f"{bcolors.FAIL}LLM INFERENCE TIME: {time.time() - api_call_start}{bcolors.ENDC}")
-        # print("INFERENCE STRING: ", completion.choices[0].message.content)
+        print("INFERENCE STRING: ", completion.choices[0].message.content)
         self.num_api_calls += 1
         print(f"{bcolors.OKBLUE}Number of API calls made by {self.player_name}: {bcolors.ENDC}", self.num_api_calls)
-        #total_tokens = completion.usage.total_tokens
-        #cur_cost =  0.011 * (total_tokens / 1000)
-        #self.cost += cur_cost 
-        #print(f"COST SO FAR: {self.cost} USD")
+        if self.model_type == 'openai':
+            total_tokens = completion.usage.total_tokens
+            cur_cost =  0.011 * (total_tokens / 1000)
+            self.cost += cur_cost 
+            print(f"COST SO FAR: {self.cost} USD")
         return completion.choices[0].message.content
         
     def _get_available_actions(self, state):
@@ -137,19 +157,19 @@ class LLMAgent():
         state_description = f"My name is {self.player_name}. I am in {player_location}. "
         if self.player_name == 'Alice' and state['Alice'].last_action_is_fixing:  
             if state['Alice'].current_room.generator_fixed:
-                state_description += 'I have finished to fix the generator in this room. '
+                state_description += 'I have finished fixing the generator in this room. '
             else:
                 state_description += 'I have started to fix the generator in this room. '
         if self.player_name == 'Bob' and state['Bob'].last_action_is_fixing:  
             if state['Bob'].current_room.generator_fixed:
-                state_description += 'I have finished to fix the generator in this room. '
+                state_description += 'I have finished fixing the generator in this room. '
             else:
                 state_description += 'I have started to fix the generator in this room. '            
         state_description+= f"{self.partner_name} is in {partner_location}. "
         if self.partner_name == 'Alice' and state['Alice'].last_action_is_fixing:  
-            state_description += 'Alice in last turn was fixing the generator. '
+            state_description += 'Alice was fixing the generator last turn. '
         if self.partner_name == 'Bob' and state['Bob'].last_action_is_fixing:  
-            state_description += 'Bob in last turn was fixing the generator. '
+            state_description += 'Bob was fixing the generator last turn. '
             
         
 
@@ -214,8 +234,10 @@ class LLMAgent():
         print(f"{bcolors.FAIL}{state_description}{bcolors.ENDC}")
         # Running inference here
         try:
-            messages = self.message + [{"role": "user", "content": state_description}]
-            response = self.inference_fn(messages=messages)
+            pi_input = self.partner_interpreter_message + [{"role": "user", "content": state_description}]
+            partner_interpretation = self.inference_fn(messages=pi_input)
+            gen_input = self.generator_message + [{"role": "user", "content": state_description + partner_interpretation}]
+            response = self.inference_fn(messages=gen_input)
             print(f'''{bcolors.WARNING}LLM RESPONSE: {response}{bcolors.ENDC}''')
             action = self.find_best_match(response)
         except Exception as e:
