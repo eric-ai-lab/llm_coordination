@@ -72,12 +72,21 @@ class Adversary:
             self.target_name = 'Bob'
             self.can_see['Alice'] = False
             self.can_see['Bob'] = True
-        # Neither Bob nor Alice are nearby, explore
+        # Neither Bob nor Alice are nearby, explore, then update target and can_see
         else:
-            self.current_room = random.choice(self.current_room.adjacent_rooms) 
-            self.target_name = ''
-            self.can_see['Alice'] = False
-            self.can_see['Bob'] = False
+            self.current_room = random.choice(self.current_room.adjacent_rooms)
+            if state['Alice'].current_room.name in room_adj_list:
+                self.target_name = 'Alice'
+                self.can_see['Alice'] = True
+                self.can_see['Bob'] = False
+            elif state['Bob'].current_room.name in room_adj_list:
+                self.target_name = 'Bob'
+                self.can_see['Alice'] = False
+                self.can_see['Bob'] = True
+            else:
+                self.target_name = ''
+                self.can_see['Alice'] = False
+                self.can_see['Bob'] = False
         
 
 class Game:
@@ -181,24 +190,22 @@ class Game:
 
             current_state = self.state.copy()
             
-            # Adversary's turn
-            self.adversary.move_greedily(current_state)
-            killer_info = ''
+            
+            killer_info = 'We have information that the killer is currently located in ' + self.adversary.current_room.name + ". "
             if self.adversary.target_name == '':
-                killer_info += 'Currently, we don\'t have information about where the killer will move to next, but we do know that he is unaware of our location. '
+                killer_info += 'We don\'t have any information about where the killer will move to next, but we do know that he is unaware of our location. '
             else:
-                killer_info += 'Currently, we have information that the killer will certainly move to the room where ' + self.adversary.target_name + ' is. '
+                killer_info += 'We also have information that the killer will certainly move to the room where ' + self.adversary.target_name + ' is. '
 
             # Inference for both player's action selection
-            # Alice's turn
+            # Alice's decision
             alice_action_string = self.alice_llm_agent.get_next_move(current_state, killer_info)
             
-            # Bob's turn
+            # Bob's decision
             bob_action_string = self.bob_llm_agent.get_next_move(current_state, killer_info)
                                                                 #  'Now in this turn, Alice is going to ' \
                                                                 #  + alice_action_string \
                                                                 #  + '. ' + killer_info[:-2] + ' and target at ' + self.adversary.target_name + '. ')
-            
             
             
             # Reset generators fix count if its fixing stopped before completion
@@ -218,7 +225,7 @@ class Game:
                     room.fix_count = 0
 
             
-            # execute action {move, fix, wait} for Alice, then Bob
+            # execute action {move, fix, wait} for Alice, Bob, then adversary
             if 'move' in alice_action_string:
                 target_room = self.extract_room(alice_action_string)
                 self.alice.move(self.rooms[target_room])
@@ -236,15 +243,18 @@ class Game:
             else:
                 # Wait in the same room 
                 pass 
+
+            # Adversary's turn
+            self.adversary.move_greedily(current_state)
+            
+            # Update state
+            self.update_state()
+            self.print_readable_state()
             
             # Check game over conditions
             outcome = self.check_game_over()
             if outcome in ['loss', 'win']:
                 return outcome, self.turn_count
-
-            # Update state
-            self.update_state()
-            self.print_readable_state()
 
             self.turn_count += 1
 
