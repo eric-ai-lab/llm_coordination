@@ -20,6 +20,8 @@ if __name__ == "__main__":
         results.append(outcome)
         turn_counts.append(turns)
         print(f"\n\n\n\nGAME {i} FINISHED\n\n\n\n")
+        with open('game_state_mixtral_ToM.txt', 'a') as file:
+            file.write(f"\n\n\n\nGAME {i} FINISHED\n\n\n\n")
     
 
     wins = results.count('win')
