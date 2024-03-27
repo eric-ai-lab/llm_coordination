@@ -84,21 +84,21 @@ class Game:
     def __init__(self):
         # Initialize rooms with thematic names
         room_names = ["room 1", "room 2", "room 3", "room 4", "room 5", "room 6", "room 7"]
-        self.rooms = {name: Room(name, has_generator=(name=="room 1" or name=="room 2")) for name in room_names}
+        self.rooms = {name: Room(name, has_generator=(name=="room 1" or name=="room 5")) for name in room_names}
         
         # Set adjacent rooms
-        self.rooms["room 1"].adjacent_rooms = [self.rooms["room 2"], self.rooms["room 5"], self.rooms["room 7"]]
-        self.rooms["room 2"].adjacent_rooms = [self.rooms["room 1"], self.rooms["room 6"], self.rooms["room 3"]]
-        self.rooms["room 3"].adjacent_rooms = [self.rooms["room 2"], self.rooms["room 7"], self.rooms["room 5"], self.rooms["room 4"]]
+        self.rooms["room 1"].adjacent_rooms = [self.rooms["room 2"], self.rooms["room 7"]]
+        self.rooms["room 2"].adjacent_rooms = [self.rooms["room 1"], self.rooms["room 3"]]
+        self.rooms["room 3"].adjacent_rooms = [self.rooms["room 2"], self.rooms["room 4"], self.rooms["room 6"]]
         self.rooms["room 4"].adjacent_rooms = [self.rooms["room 3"], self.rooms["room 5"]]
-        self.rooms["room 5"].adjacent_rooms = [self.rooms["room 1"], self.rooms["room 3"], self.rooms["room 4"], self.rooms["room 6"]]
-        self.rooms["room 6"].adjacent_rooms = [self.rooms["room 2"], self.rooms["room 5"], self.rooms["room 7"]]
-        self.rooms["room 7"].adjacent_rooms = [self.rooms["room 1"], self.rooms["room 3"], self.rooms["room 6"]]
+        self.rooms["room 5"].adjacent_rooms = [self.rooms["room 4"], self.rooms["room 6"]]
+        self.rooms["room 6"].adjacent_rooms = [self.rooms["room 3"], self.rooms["room 5"], self.rooms["room 7"]]
+        self.rooms["room 7"].adjacent_rooms = [self.rooms["room 1"], self.rooms["room 6"]]
         
         # Initialize players and adversary
         self.alice = Player("Alice", self.rooms["room 1"])
         self.bob = Player("Bob", self.rooms["room 2"])
-        self.adversary = Adversary(self.rooms["room 3"])
+        self.adversary = Adversary(self.rooms["room 5"])
         
         self.game_over = False
 
@@ -140,16 +140,32 @@ class Game:
         return room_name
 
     def print_readable_state(self):
-        print("\nCurrent State:")
-        print("--------------")
-        print(f"Alice is in {self.state['Alice'].current_room}")
-        print(f"Bob is in {self.state['Bob'].current_room}")
-        print(f"Adversary is in {self.state['Adversary'].current_room}")
-        print("Generators:")
+#        print("\nCurrent State:")
+#        print("--------------")
+#        print(f"Alice is in {self.state['Alice'].current_room.name}")
+#        print(f"Bob is in {self.state['Bob'].current_room.name}")
+#        print(f"Adversary is in {self.state['Adversary'].current_room.name}")
+#        print("Generators:")
+#        for room, info in self.state['Generators'].items():
+#            print(f"  - {room}: {info['fix_count']}/2 fixed")
+#        print(f"Exit Gate: {'Open' if self.state['exit gate'] else 'Closed'}")
+#        print("--------------\n")
+        state_info = "\nCurrent State:\n"
+        state_info += "--------------\n"
+        state_info += f"Alice is in {self.alice.current_room.name}\n"
+        state_info += f"Bob is in {self.bob.current_room.name}\n"
+        state_info += f"Adversary is in {self.adversary.current_room.name}\n"
+        state_info += "Generators:\n"
         for room, info in self.state['Generators'].items():
-            print(f"  - {room}: {info['fix_count']}/2 fixed")
-        print(f"Exit Gate: {'Open' if self.state['exit gate'] else 'Closed'}")
-        print("--------------\n")
+            state_info += f"  - {room}: {info['fix_count']}/2 fixed\n"
+        state_info += f"Exit Gate: {'Open' if self.state['exit gate'] else 'Closed'}\n"
+        state_info += "--------------\n"
+
+        # Write the state information to a file
+        with open('game_state_mixtral_ToM.txt', 'a') as file:
+            file.write(state_info)
+        # Print the state information to the console
+        print(state_info)
 
     # handle main gameplay logic and flow
     def play(self):
@@ -168,7 +184,10 @@ class Game:
             # Adversary's turn
             self.adversary.move_greedily(current_state)
             killer_info = ''
-            killer_info += 'Currently, we have information that the killer will certainly move to the room where ' + self.adversary.target_name + ' is. '
+            if self.adversary.target_name == '':
+                killer_info += 'Currently, we don\'t have information about where the killer will move to next, but we do know that he is unaware of our location. '
+            else:
+                killer_info += 'Currently, we have information that the killer will certainly move to the room where ' + self.adversary.target_name + ' is. '
 
             # Inference for both player's action selection
             # Alice's turn
@@ -219,8 +238,8 @@ class Game:
                 pass 
             
             # Check game over conditions
-            outcome = self.check_game_over
-            if outcome in ['loss' or 'win']:
+            outcome = self.check_game_over()
+            if outcome in ['loss', 'win']:
                 return outcome, self.turn_count
 
             # Update state
