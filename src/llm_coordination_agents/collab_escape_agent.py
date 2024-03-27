@@ -56,18 +56,14 @@ class LLMAgent():
 
         As a survivor, my goal is to avoid the killer and move to rooms with generators, repair the generators, and reach the exit gate to escape. To fully repair a generator, it needs two consecutive fix actions (i.e. one must spend two consecutive turns fixing the generator in order for it be repaired). Survivors must also avoid being in the same room as the killer or an adjacent room, as the killer will move to catch any survivors they see in adjacent rooms. Being in the same room with the Killer results in an immediate loss.
 
-        In each turn, survivors and the killer simultaneously perform one action. We cannot know each other's actions ahead of time but can make educated guesses. We should coordinate in order to fix generators, lure the killer away, etc.. '''
+        In each turn, survivors and the killer simultaneously perform one action. We cannot know each other's actions ahead of time but can make educated guesses. We should coordinate in order to fix generators, protect each other by luring the killer away, etc.. '''
 
         self.generator_prompt = self.base_prompt + '''Help me select the best action from the list, considering my priority. First, consider if the current room is safe from the killer and then format your response as "Action: move to room <number>" or "Action: fix generator in room <number>." Do not say anything else.'''
         
         self.llm_system_prompt = "A chat between a human and an assistant. The assistant is correct and brief at all times."
 
         self.partner_interpreter_base_prompt = f'''{self.base_prompt}
-        I am {self.player_name}, playing the game Collab Escape with {self.partner_name}. 
-        You are a Theory of Mind inference agent for our game. You will be provided with my partner's last action and the latest state information resulting from the previous turn. You will provide me with an explanation for my partner’s previous action along with their intention and implicit communication.
-        Format your response as:
-        Partner Action Explanation:<1 sentence explanation of partner action>
-        Suggestion:<What should I do next based on the perceived intention of my partner's action>.
+        You are a Theory of Mind inference agent for the game Collab Escape. You will be provided with the current state including my location, my partner's location, and the killer's target if known. You will provide me with a short explanation about what my partner intends to do next based on the available information.
         '''
 
         self.assistant_response_initial = f'''Got it!'''
@@ -187,10 +183,10 @@ class LLMAgent():
         
         generator_rooms = list(generator_status.keys())
         for room_name in generator_rooms:
-            if 2 - generator_status[room_name]['fix_count'] == 0:
+            if 2 - generator_status[room_name]['fix_count'] <= 0:
                 state_description += f"Generator in {room_name} is fixed. "
             else:
-                state_description += f"Generator in {room_name} still needs {2 - generator_status[room_name]['fix_count']} fix. "
+                state_description += f"Number of fixes still needed by the generator in {room_name} is {2 - generator_status[room_name]['fix_count']}. "
 
         
        
@@ -240,6 +236,10 @@ class LLMAgent():
             response = self.inference_fn(messages=gen_input)
             print(f'''{bcolors.WARNING}LLM RESPONSE: {response}{bcolors.ENDC}''')
             action = self.find_best_match(response)
+            with open('game_state_mixtral_ToM.txt', 'a') as file:
+                file.write(state_description + "\n")
+                file.write(partner_interpretation + "\n")
+                file.write(response)
         except Exception as e:
             action = 'wait' 
             print(f'Failed to get response from openai api for player {self.player_id} due to {e}')
