@@ -75,6 +75,7 @@ class Adversary:
         # Neither Bob nor Alice are nearby, explore, then update target and can_see
         else:
             self.current_room = random.choice(self.current_room.adjacent_rooms)
+            room_adj_list =  [room.name for room in self.current_room.adjacent_rooms]
             if state['Alice'].current_room.name in room_adj_list:
                 self.target_name = 'Alice'
                 self.can_see['Alice'] = True
@@ -92,22 +93,23 @@ class Adversary:
 class Game:
     def __init__(self):
         # Initialize rooms with thematic names
-        room_names = ["room 1", "room 2", "room 3", "room 4", "room 5", "room 6", "room 7"]
+        room_names = ["room 1", "room 2", "room 3", "room 4", "room 5", "room 6", "room 7", "room 8"]
         self.rooms = {name: Room(name, has_generator=(name=="room 1" or name=="room 5")) for name in room_names}
         
         # Set adjacent rooms
-        self.rooms["room 1"].adjacent_rooms = [self.rooms["room 2"], self.rooms["room 7"]]
+        self.rooms["room 1"].adjacent_rooms = [self.rooms["room 2"], self.rooms["room 8"]]
         self.rooms["room 2"].adjacent_rooms = [self.rooms["room 1"], self.rooms["room 3"]]
-        self.rooms["room 3"].adjacent_rooms = [self.rooms["room 2"], self.rooms["room 4"], self.rooms["room 6"]]
+        self.rooms["room 3"].adjacent_rooms = [self.rooms["room 2"], self.rooms["room 4"], self.rooms["room 7"]]
         self.rooms["room 4"].adjacent_rooms = [self.rooms["room 3"], self.rooms["room 5"]]
         self.rooms["room 5"].adjacent_rooms = [self.rooms["room 4"], self.rooms["room 6"]]
-        self.rooms["room 6"].adjacent_rooms = [self.rooms["room 3"], self.rooms["room 5"], self.rooms["room 7"]]
-        self.rooms["room 7"].adjacent_rooms = [self.rooms["room 1"], self.rooms["room 6"]]
+        self.rooms["room 6"].adjacent_rooms = [self.rooms["room 5"], self.rooms["room 7"]]
+        self.rooms["room 7"].adjacent_rooms = [self.rooms["room 3"], self.rooms["room 6"], self.rooms["room 8"]]
+        self.rooms["room 8"].adjacent_rooms = [self.rooms["room 1"], self.rooms["room 7"]]
         
         # Initialize players and adversary
         self.alice = Player("Alice", self.rooms["room 1"])
         self.bob = Player("Bob", self.rooms["room 2"])
-        self.adversary = Adversary(self.rooms["room 5"])
+        self.adversary = Adversary(self.rooms["room 6"])
         
         self.game_over = False
 
@@ -171,7 +173,7 @@ class Game:
         state_info += "--------------\n"
 
         # Write the state information to a file
-        with open('game_state_mixtral_ToM.txt', 'a') as file:
+        with open('game_state_gpt3.5_ToM.txt', 'a') as file:
             file.write(state_info)
         # Print the state information to the console
         print(state_info)
@@ -193,7 +195,7 @@ class Game:
             
             killer_info = 'We have information that the killer is currently located in ' + self.adversary.current_room.name + ". "
             if self.adversary.target_name == '':
-                killer_info += 'We don\'t have any information about where the killer will move to next, but we do know that he is unaware of our location. '
+                killer_info += 'We don\'t know which room the killer will move to next, but we do know that he is unaware of our current location. '
             else:
                 killer_info += 'We also have information that the killer will certainly move to the room where ' + self.adversary.target_name + ' is. '
 
