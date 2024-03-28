@@ -32,15 +32,16 @@ class LLMAgent():
         self.presence_penalty = presence_penalty
         self.api_server = api_server
         self.device = 'cuda'
+        self.cost  = 0
 
         #self.model = 'gpt-4-0125'
         #self.model_name = 'gpt-4-0125'
-        # self.model = 'gpt-35-turbo'
-        # self.model_name = 'gpt-35-turbo'
-        #self.model_type = 'openai'
-        self.model_name = 'mistralai/Mixtral-8x7B-Instruct-v0.1'
-        self.model_type = 'mistral'
-        self.model = 'mixtral'
+        self.model = 'gpt-35-turbo'
+        self.model_name = 'gpt-35-turbo'
+        self.model_type = 'openai'
+        #self.model_name = 'mistralai/Mixtral-8x7B-Instruct-v0.1'
+        #self.model_type = 'mistral'
+        #self.model = 'mixtral'
 
         self.player_id = player_id
         self.player_names = ['Alice', 'Bob']
@@ -52,7 +53,7 @@ class LLMAgent():
         
         self.base_prompt = '''In the game Collab Escape, we must cooperate with each other to repair generators and escape the map. We win even if only one of us escapes the map.
 
-        Environment Details: There are 7 rooms (room 1 to 7). Room 1 and 5 have generators, and room 7 has the exit gate. The rooms are connected by pathways, and you can only move to adjacent rooms. Room 1 is connected to room 2 and 7; room 2 is connected to room 1 and 3; room 3 is connected to room 2, 4, and 6; room 4 is connected to room 3 and 5; room 5 is connected to room 4 and 6; room 6 is connected to room 3, 5, and 7; room 7 is connected to room 1 and 6.
+        Environment Details: There are 8 rooms (room 1 to 8). Room 1 and 5 have generators, and room 7 has the exit gate. The rooms are connected by pathways, and you can only move to adjacent rooms. Room 1 is connected to room 2 and 8; room 2 is connected to room 1 and 3; room 3 is connected to room 2, 4, and 7; room 4 is connected to room 3 and 5; room 5 is connected to room 4 and 6; room 6 is connected to room 5 and 7; room 7 is connected to room 3, 6, and 8; room 8 is connected to room 1 and 7.
 
         As a survivor, my goal is to avoid the killer and move to rooms with generators, repair the generators, and reach the exit gate to escape. To fully repair a generator, it needs two consecutive fix actions (i.e. one must spend two consecutive turns fixing the generator in order for it be repaired). Survivors must also avoid being in the same room as the killer or an adjacent room, as the killer will move to catch any survivors they see in adjacent rooms. Being in the same room with the Killer results in an immediate loss.
 
@@ -107,8 +108,8 @@ class LLMAgent():
             )
         self.inference_fn = self.run_openai_inference
         self.num_api_calls = 0
-        self.all_actions = [f'move to {r}' for r in ["room 1", "room 2", "room 3", "room 4", "room 5", "room 6", "room 7"]]
-        self.all_actions += ['fix generator in room 1', 'fix generator in room 2']
+        self.all_actions = [f'move to {r}' for r in ["room 1", "room 2", "room 3", "room 4", "room 5", "room 6", "room 7", "room 8"]]
+        self.all_actions += ['fix generator in room 1', 'fix generator in room 5']
         self.all_actions += ['wait']
 
     def run_openai_inference(self, messages):
@@ -163,9 +164,9 @@ class LLMAgent():
                 state_description += 'I have started to fix the generator in this room. '            
         state_description+= f"{self.partner_name} is in {partner_location}. "
         if self.partner_name == 'Alice' and state['Alice'].last_action_is_fixing:  
-            state_description += 'Alice was fixing the generator last turn. '
+            state_description += f"Alice was fixing the generator in {state['Alice'].current_room.name} last turn. "
         if self.partner_name == 'Bob' and state['Bob'].last_action_is_fixing:  
-            state_description += 'Bob was fixing the generator last turn. '
+            state_description += f"Bob was fixing the generator in {state['Bob'].current_room.name} last turn. "
             
         
 
@@ -236,7 +237,7 @@ class LLMAgent():
             response = self.inference_fn(messages=gen_input)
             print(f'''{bcolors.WARNING}LLM RESPONSE: {response}{bcolors.ENDC}''')
             action = self.find_best_match(response)
-            with open('game_state_mixtral_ToM.txt', 'a') as file:
+            with open('game_state_gpt3.5_ToM.txt', 'a') as file:
                 file.write(state_description + "\n")
                 file.write(partner_interpretation + "\n")
                 file.write(response)
