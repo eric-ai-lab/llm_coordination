@@ -89,22 +89,6 @@ class Adversary:
         else:
             return random.choice(self.current_room.adjacent_rooms)
         
-#            self.current_room = state['Alice'].current_room
-#            self.current_room = state['Bob'].current_room
-#
-#
-#            if self.can_see['Alice'] and self.can_see['Bob']:
-#                
-#                self.current_room = state[self.target_name].current_room
-#            elif self.can_see['Alice']:
-#                self.target_name = 'Bob'
-#                self.current_room = state['Bob'].current_room
-#            elif self.can_see['Bob']:
-#                self.target_name = 'Alice'
-#                self.current_room = state['Alice'].current_room
-#            else:
-#                self.target_name = 'Alice'
-#                self.current_room = state['Alice'].current_room
 
         
 
