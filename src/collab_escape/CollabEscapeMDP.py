@@ -25,69 +25,87 @@ class Player:
         self.name = name
         self.current_room = current_room
         self.last_action_is_fixing = False
-    def move(self, target_room):
-        if target_room in self.current_room.adjacent_rooms:
-            self.current_room = target_room
-            return True
-        return False
 
-    def fix_generator(self):
-        return self.current_room.fix_generator()
+    # get room number from selected action
+    def _extract_room(self, action_string):
+        room_name = re.search(r"move to (.+)", action_string).group(1)
+        return room_name
+    
+    # exeucte chosen action
+    def move(self, action_string, rooms):
+        if 'move' in action_string:
+            target_room = self._extract_room(action_string)
+            if rooms[target_room] in self.current_room.adjacent_rooms:
+                self.current_room = rooms[target_room]
+            else:
+                # target room isn't adjacent
+                pass
+        elif "fix" in action_string:
+            self.current_room.fix_generator()
+        else:
+            # Wait in the same room 
+            pass 
 
 class Adversary:
     def __init__(self, current_room):
         self.current_room = current_room
         self.target_name = ''
         self.can_see = {'Alice': False, 'Bob': False}
+
     def move_randomly(self):
         self.current_room = random.choice(self.current_room.adjacent_rooms)
+
+    def move(self, chosen_room):
+        # move to chosen room
+        self.current_room = chosen_room
     
-    def move_greedily(self, state):
+    def choose_greedily(self, state):
         room_adj_list =  [room.name for room in self.current_room.adjacent_rooms]
+        print(state['Alice'].current_room.name)
+        print(state['Bob'].current_room.name)
         
-        # Both alice and bob are near, pursue one of them
+        # Both alice and bob are near, default to pursuing alice
         if state['Alice'].current_room.name in room_adj_list and state['Bob'].current_room.name in room_adj_list:
-            if self.can_see['Alice'] and self.can_see['Bob']:
-                
-                self.current_room = state[self.target_name].current_room
-            elif self.can_see['Alice']:
-                self.target_name = 'Bob'
-                self.current_room = state['Bob'].current_room
-            elif self.can_see['Bob']:
-                self.target_name = 'Alice'
-                self.current_room = state['Alice'].current_room
-            else:
-                self.target_name = 'Alice'
-                self.current_room = state['Alice'].current_room
+            self.target_name = 'Alice'
+            self.can_see['Alice'] = True
+            self.can_see['Bob'] = True
+            return state['Alice'].current_room
         
-        # Alice is near, pursue
+        # Only alice is near, pursue
         elif state['Alice'].current_room.name in room_adj_list:    
-            self.current_room = state['Alice'].current_room
             self.target_name = 'Alice'
             self.can_see['Alice'] = True
             self.can_see['Bob'] = False
-        # Bob is near, pursue
+            return state['Alice'].current_room
+
+        # Only bob is near, pursue
         elif state['Bob'].current_room.name in room_adj_list:
-            self.current_room = state['Bob'].current_room
             self.target_name = 'Bob'
             self.can_see['Alice'] = False
             self.can_see['Bob'] = True
-        # Neither Bob nor Alice are nearby, explore, then update target and can_see
+            return state['Bob'].current_room
+
+        # Neither Bob nor Alice are nearby, explore by choosing random room from adj rooms
         else:
-            self.current_room = random.choice(self.current_room.adjacent_rooms)
-            room_adj_list =  [room.name for room in self.current_room.adjacent_rooms]
-            if state['Alice'].current_room.name in room_adj_list:
-                self.target_name = 'Alice'
-                self.can_see['Alice'] = True
-                self.can_see['Bob'] = False
-            elif state['Bob'].current_room.name in room_adj_list:
-                self.target_name = 'Bob'
-                self.can_see['Alice'] = False
-                self.can_see['Bob'] = True
-            else:
-                self.target_name = ''
-                self.can_see['Alice'] = False
-                self.can_see['Bob'] = False
+            return random.choice(self.current_room.adjacent_rooms)
+        
+#            self.current_room = state['Alice'].current_room
+#            self.current_room = state['Bob'].current_room
+#
+#
+#            if self.can_see['Alice'] and self.can_see['Bob']:
+#                
+#                self.current_room = state[self.target_name].current_room
+#            elif self.can_see['Alice']:
+#                self.target_name = 'Bob'
+#                self.current_room = state['Bob'].current_room
+#            elif self.can_see['Bob']:
+#                self.target_name = 'Alice'
+#                self.current_room = state['Alice'].current_room
+#            else:
+#                self.target_name = 'Alice'
+#                self.current_room = state['Alice'].current_room
+
         
 
 class Game:
@@ -145,22 +163,7 @@ class Game:
 
         return "continue"
 
-    # get room number from selected action
-    def extract_room(self, action_string):
-        room_name = re.search(r"move to (.+)", action_string).group(1)
-        return room_name
-
     def print_readable_state(self):
-#        print("\nCurrent State:")
-#        print("--------------")
-#        print(f"Alice is in {self.state['Alice'].current_room.name}")
-#        print(f"Bob is in {self.state['Bob'].current_room.name}")
-#        print(f"Adversary is in {self.state['Adversary'].current_room.name}")
-#        print("Generators:")
-#        for room, info in self.state['Generators'].items():
-#            print(f"  - {room}: {info['fix_count']}/2 fixed")
-#        print(f"Exit Gate: {'Open' if self.state['exit gate'] else 'Closed'}")
-#        print("--------------\n")
         state_info = "\nCurrent State:\n"
         state_info += "--------------\n"
         state_info += f"Alice is in {self.alice.current_room.name}\n"
@@ -173,7 +176,7 @@ class Game:
         state_info += "--------------\n"
 
         # Write the state information to a file
-        with open('game_state_gpt3.5_ToM.txt', 'a') as file:
+        with open('game_state_gpt3.5_ToM5.txt', 'a') as file:
             file.write(state_info)
         # Print the state information to the console
         print(state_info)
@@ -186,31 +189,27 @@ class Game:
 
         self.turn_count = 1
         while not self.game_over:
-            # Update state
-            # self.update_state()
-            # print("Current State:", self.state)
-
             current_state = self.state.copy()
+
+            # Adversary's decision on where to move
+            adversary_choice = self.adversary.choose_greedily(current_state)
             
-            
+            # intel on killer, provided to agents at inference
             killer_info = 'We have information that the killer is currently located in ' + self.adversary.current_room.name + ". "
             if self.adversary.target_name == '':
                 killer_info += 'We don\'t know which room the killer will move to next, but we do know that he is unaware of our current location. '
             else:
                 killer_info += 'We also have information that the killer will certainly move to the room where ' + self.adversary.target_name + ' is. '
 
-            # Inference for both player's action selection
+            # Inference for both agent's action selection:
             # Alice's decision
             alice_action_string = self.alice_llm_agent.get_next_move(current_state, killer_info)
             
             # Bob's decision
             bob_action_string = self.bob_llm_agent.get_next_move(current_state, killer_info)
-                                                                #  'Now in this turn, Alice is going to ' \
-                                                                #  + alice_action_string \
-                                                                #  + '. ' + killer_info[:-2] + ' and target at ' + self.adversary.target_name + '. ')
             
-            
-            # Reset generators fix count if its fixing stopped before completion
+
+            # Reset generators fix count if its fixing stopped before completion (according to latest action decisions)
             reset_generator_list = self.rooms.copy()
             if "fix" in alice_action_string:
                 reset_generator_list.pop(self.alice.current_room.name)
@@ -227,27 +226,12 @@ class Game:
                     room.fix_count = 0
 
             
-            # execute action {move, fix, wait} for Alice, Bob, then adversary
-            if 'move' in alice_action_string:
-                target_room = self.extract_room(alice_action_string)
-                self.alice.move(self.rooms[target_room])
-            elif "fix" in alice_action_string:
-                self.alice.fix_generator()
-            else:
-                # Wait in the same room 
-                pass 
-            
-            if 'move' in bob_action_string:
-                target_room = self.extract_room(bob_action_string)
-                self.bob.move(self.rooms[target_room])
-            elif "fix" in bob_action_string:
-                self.bob.fix_generator()
-            else:
-                # Wait in the same room 
-                pass 
+            # execute action {move, fix, wait} for Alice and Bob
+            self.alice.move(alice_action_string, self.rooms)
+            self.bob.move(bob_action_string, self.rooms)
 
-            # Adversary's turn
-            self.adversary.move_greedily(current_state)
+            # execute Adversary's move
+            self.adversary.move(adversary_choice)
             
             # Update state
             self.update_state()

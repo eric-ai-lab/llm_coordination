@@ -148,7 +148,6 @@ class LLMAgent():
         return available_actions + ['wait']
         
     def _state_to_description(self, state, killer_info):
-        print(state)
         player_location = state[self.player_name].current_room.name
         partner_location = state[self.partner_name].current_room.name
         state_description = f"My name is {self.player_name}. I am in {player_location}. "
@@ -185,7 +184,7 @@ class LLMAgent():
         generator_rooms = list(generator_status.keys())
         for room_name in generator_rooms:
             if 2 - generator_status[room_name]['fix_count'] <= 0:
-                state_description += f"Generator in {room_name} is fixed. "
+                state_description += f"Generator in {room_name} is fully repaired. "
             else:
                 state_description += f"Number of fixes still needed by the generator in {room_name} is {2 - generator_status[room_name]['fix_count']}. "
 
@@ -237,10 +236,10 @@ class LLMAgent():
             response = self.inference_fn(messages=gen_input)
             print(f'''{bcolors.WARNING}LLM RESPONSE: {response}{bcolors.ENDC}''')
             action = self.find_best_match(response)
-            with open('game_state_gpt3.5_ToM.txt', 'a') as file:
+            with open('game_state_gpt3.5_ToM5.txt', 'a') as file:
                 file.write(state_description + "\n")
                 file.write(partner_interpretation + "\n")
-                file.write(response)
+                file.write(response + "\n")
         except Exception as e:
             action = 'wait' 
             print(f'Failed to get response from openai api for player {self.player_id} due to {e}')
