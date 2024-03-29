@@ -34,10 +34,10 @@ class LLMAgent():
         self.device = 'cuda'
         self.cost  = 0
 
-        #self.model = 'gpt-4-0125'
-        #self.model_name = 'gpt-4-0125'
-        self.model = 'gpt-35-turbo'
-        self.model_name = 'gpt-35-turbo'
+        self.model = 'gpt-4-0125'
+        self.model_name = 'gpt-4-0125'
+        #self.model = 'gpt-35-turbo'
+        #self.model_name = 'gpt-35-turbo'
         self.model_type = 'openai'
         #self.model_name = 'mistralai/Mixtral-8x7B-Instruct-v0.1'
         #self.model_type = 'mistral'
@@ -53,7 +53,7 @@ class LLMAgent():
         
         self.base_prompt = '''In the game Collab Escape, we must cooperate with each other to repair generators and escape the map. We win even if only one of us escapes the map.
 
-        Environment Details: There are 8 rooms (room 1 to 8). Room 1 and 5 have generators, and room 7 has the exit gate. The rooms are connected by pathways, and you can only move to adjacent rooms. Room 1 is connected to room 2 and 8; room 2 is connected to room 1 and 3; room 3 is connected to room 2, 4, and 7; room 4 is connected to room 3 and 5; room 5 is connected to room 4 and 6; room 6 is connected to room 5 and 7; room 7 is connected to room 3, 6, and 8; room 8 is connected to room 1 and 7.
+        Environment Details: There are 10 rooms (room 1 to 10). Only room 1 and 6 have generators, and room 7 has the exit gate. The rooms are connected by pathways, and you can only move to adjacent rooms. Room 1 is connected to room 2 and 10; room 2 is connected to room 1 and 3; room 3 is connected to room 2, 4, and 8; room 4 is connected to room 3 and 5; room 5 is connected to room 4 and 6; room 6 is connected to room 5 and 7; room 7 is connected to room 6 and 8; room 8 is connected to room 3, 7, and 9; room 9 is connected to room 8 and 10; room 10 is connected to room 1 and 9.
 
         As a survivor, my goal is to avoid the killer and move to rooms with generators, repair the generators, and reach the exit gate to escape. To fully repair a generator, it needs two consecutive fix actions (i.e. one must spend two consecutive turns fixing the generator in order for it be repaired). Survivors must also avoid being in the same room as the killer or an adjacent room, as the killer will move to catch any survivors they see in adjacent rooms. Being in the same room with the Killer results in an immediate loss.
 
@@ -108,8 +108,8 @@ class LLMAgent():
             )
         self.inference_fn = self.run_openai_inference
         self.num_api_calls = 0
-        self.all_actions = [f'move to {r}' for r in ["room 1", "room 2", "room 3", "room 4", "room 5", "room 6", "room 7", "room 8"]]
-        self.all_actions += ['fix generator in room 1', 'fix generator in room 5']
+        self.all_actions = [f'move to {r}' for r in ["room 1", "room 2", "room 3", "room 4", "room 5", "room 6", "room 7", "room 8", "room 9", "room 10"]]
+        self.all_actions += ['fix generator in room 1', 'fix generator in room 6']
         self.all_actions += ['wait']
 
     def run_openai_inference(self, messages):
@@ -236,9 +236,9 @@ class LLMAgent():
             response = self.inference_fn(messages=gen_input)
             print(f'''{bcolors.WARNING}LLM RESPONSE: {response}{bcolors.ENDC}''')
             action = self.find_best_match(response)
-            with open('game_state_gpt3.5_ToM5.txt', 'a') as file:
+            with open('game_state_gpt4_ToM_14.txt', 'a') as file:
                 file.write(state_description + "\n")
-                file.write(partner_interpretation + "\n")
+                #file.write(partner_interpretation + "\n")
                 file.write(response + "\n")
         except Exception as e:
             action = 'wait' 

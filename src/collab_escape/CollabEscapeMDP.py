@@ -61,15 +61,24 @@ class Adversary:
     
     def choose_greedily(self, state):
         room_adj_list =  [room.name for room in self.current_room.adjacent_rooms]
-        print(state['Alice'].current_room.name)
-        print(state['Bob'].current_room.name)
         
-        # Both alice and bob are near, default to pursuing alice
+        # Both alice and bob are near...
         if state['Alice'].current_room.name in room_adj_list and state['Bob'].current_room.name in room_adj_list:
-            self.target_name = 'Alice'
-            self.can_see['Alice'] = True
-            self.can_see['Bob'] = True
-            return state['Alice'].current_room
+            if self.can_see['Alice'] and self.can_see['Bob']:
+                return state[self.target_name].current_room
+            elif self.can_see['Alice']:
+                self.can_see['Bob'] = True
+                self.target_name = 'Bob'
+                return state['Bob'].current_room
+            elif self.can_see['Bob']:
+                self.can_see['Alice'] = True
+                self.target_name = 'Alice'
+                return state['Alice'].current_room
+            else:
+                self.target_name = 'Alice'
+                self.can_see['Alice'] = True
+                self.can_see['Bob'] = True
+                return state['Alice'].current_room
         
         # Only alice is near, pursue
         elif state['Alice'].current_room.name in room_adj_list:    
@@ -87,26 +96,29 @@ class Adversary:
 
         # Neither Bob nor Alice are nearby, explore by choosing random room from adj rooms
         else:
+            self.target_name = ''
+            self.can_see['Alice'] = False
+            self.can_see['Bob'] = False
             return random.choice(self.current_room.adjacent_rooms)
-        
-
         
 
 class Game:
     def __init__(self):
         # Initialize rooms with thematic names
-        room_names = ["room 1", "room 2", "room 3", "room 4", "room 5", "room 6", "room 7", "room 8"]
-        self.rooms = {name: Room(name, has_generator=(name=="room 1" or name=="room 5")) for name in room_names}
+        room_names = ["room 1", "room 2", "room 3", "room 4", "room 5", "room 6", "room 7", "room 8", "room 9", "room 10"]
+        self.rooms = {name: Room(name, has_generator=(name=="room 1" or name=="room 6")) for name in room_names}
         
         # Set adjacent rooms
-        self.rooms["room 1"].adjacent_rooms = [self.rooms["room 2"], self.rooms["room 8"]]
+        self.rooms["room 1"].adjacent_rooms = [self.rooms["room 2"], self.rooms["room 10"]]
         self.rooms["room 2"].adjacent_rooms = [self.rooms["room 1"], self.rooms["room 3"]]
-        self.rooms["room 3"].adjacent_rooms = [self.rooms["room 2"], self.rooms["room 4"], self.rooms["room 7"]]
+        self.rooms["room 3"].adjacent_rooms = [self.rooms["room 2"], self.rooms["room 4"], self.rooms["room 8"]]
         self.rooms["room 4"].adjacent_rooms = [self.rooms["room 3"], self.rooms["room 5"]]
         self.rooms["room 5"].adjacent_rooms = [self.rooms["room 4"], self.rooms["room 6"]]
         self.rooms["room 6"].adjacent_rooms = [self.rooms["room 5"], self.rooms["room 7"]]
-        self.rooms["room 7"].adjacent_rooms = [self.rooms["room 3"], self.rooms["room 6"], self.rooms["room 8"]]
-        self.rooms["room 8"].adjacent_rooms = [self.rooms["room 1"], self.rooms["room 7"]]
+        self.rooms["room 7"].adjacent_rooms = [self.rooms["room 3"], self.rooms["room 6"]]
+        self.rooms["room 8"].adjacent_rooms = [self.rooms["room 3"], self.rooms["room 7"], self.rooms["room 9"]]
+        self.rooms["room 9"].adjacent_rooms = [self.rooms["room 8"], self.rooms["room 10"]]
+        self.rooms["room 10"].adjacent_rooms = [self.rooms["room 1"], self.rooms["room 9"]]
         
         # Initialize players and adversary
         self.alice = Player("Alice", self.rooms["room 1"])
@@ -160,7 +172,7 @@ class Game:
         state_info += "--------------\n"
 
         # Write the state information to a file
-        with open('game_state_gpt3.5_ToM5.txt', 'a') as file:
+        with open('game_state_gpt4_ToM_14.txt', 'a') as file:
             file.write(state_info)
         # Print the state information to the console
         print(state_info)
@@ -177,6 +189,9 @@ class Game:
 
             # Adversary's decision on where to move
             adversary_choice = self.adversary.choose_greedily(current_state)
+
+            # execute Adversary's move (use this one if you want adversary to move before agents; gives agents opportunity to react and lure killer away)
+            #self.adversary.move(adversary_choice)
             
             # intel on killer, provided to agents at inference
             killer_info = 'We have information that the killer is currently located in ' + self.adversary.current_room.name + ". "
@@ -214,7 +229,7 @@ class Game:
             self.alice.move(alice_action_string, self.rooms)
             self.bob.move(bob_action_string, self.rooms)
 
-            # execute Adversary's move
+            # execute Adversary's move (use this one if you want adversary and agents to move in unison. dont forget to adjust killer info prompt as well)
             self.adversary.move(adversary_choice)
             
             # Update state
