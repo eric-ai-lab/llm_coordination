@@ -144,6 +144,9 @@ class LLMManager:
         model_inputs = encodeds.to(self.device)
         generated_ids = self.model.generate(model_inputs, max_new_tokens=1000, do_sample=True, temperature=0.7)
         decoded = self.tokenizer.batch_decode(generated_ids)
+        with open('question_inference_log.txt', 'a') as file:
+                    file.write('training example ' + str(self.counter) + ' :\n')
+                    file.write(f"DECODED OUTPUT:\n{decoded}\n")
         return decoded[0].split("ASSISTANT: ")[-1]
 
 
@@ -153,7 +156,7 @@ class TestLLMCoordination:
         self.df = df 
         self.model = model
         self.model_type = model_type 
-        self.llm = LLMManager(model_name=self.model, model_type=self.model_type, cache_dir='/data4/saaket/cache/hub')
+        self.llm = LLMManager(model_name=self.model, model_type=self.model_type, cache_dir='/data4/anthony/cache/hub')
         self.log_file = log_file
         self.num_trials = num_trials
         self.issues = []
@@ -162,6 +165,7 @@ class TestLLMCoordination:
             'TOM_ANSWERS': [],
             'JP_ANSWERS': []
         }
+        self.counter = 0
 
     def clear_logs(self):
         self.log = {
@@ -174,7 +178,12 @@ class TestLLMCoordination:
         return len(self.df)
 
     def find_answer_fuzzy(self, question_string, inference_string):
-        ## Need to improve this a bit more 
+        #global global_counter
+        #with open('question_inference_log.txt', 'a') as log_file:
+        #    lines = question_string.split('\n')
+        #    last_lines = '\n'.join(lines[-10:]) if len(lines) >= 10 else question_string
+        #    log_file.write(f"Log Entry {global_counter}:\nQuestion: {last_lines}\nInference: {inference_string}\n\n")
+        #    global_counter += 1
         selected_ordinal = 'A'
         def get_answer_ordinal(inference_string):
             match = re.search(r'([A-Z])[\.\)]', inference_string)
@@ -375,7 +384,14 @@ class TestLLMCoordination:
             ec_inference = self.run_inference(scenario.ec_directive, scenario.game_desc, scenario.ec_question) 
             self.log['EC_ANSWERS'].append(ec_inference)
             try:
-                ec_answer_llm = self.find_answer_fuzzy(scenario.ec_question, ec_inference)
+                with open('question_inference_log.txt', 'a') as file:
+                    file.write('training example ' + str(self.counter) + ' :\n')
+                    lines = scenario.ec_question.split('\n')
+                    last_lines = '\n'.join(lines[-10:]) if len(lines) >= 10 else scenario.ec_question
+                    file.write(f"EC QUESTION:\n{last_lines}\nINFERENCE: {ec_inference}\n")
+                    ec_answer_llm = self.find_answer_fuzzy(scenario.ec_question, ec_inference)
+                    file.write(f"fuzzywuzzy: {ec_answer_llm}\n\n")
+                    
             except:
                 self.issues.append({'type': 'EC','question': scenario.ec_question, 'inference': ec_inference, 'game': current_game})
                 ec_answer_llm = '2'
@@ -383,7 +399,13 @@ class TestLLMCoordination:
             tom_inference = self.run_inference(scenario.tom_directive, scenario.game_desc, scenario.tom_question)
             self.log['TOM_ANSWERS'].append(tom_inference)
             try:
-                tom_answer_llm = self.find_answer_fuzzy(scenario.tom_question,tom_inference)
+                with open('question_inference_log.txt', 'a') as file:
+                    file.write('training example ' + str(self.counter) + ' :\n')
+                    lines = scenario.tom_question.split('\n')
+                    last_lines = '\n'.join(lines[-10:]) if len(lines) >= 10 else scenario.tom_question
+                    file.write(f"TOM QUESTION:\n{last_lines}\nINFERENCE: {tom_inference}\n")
+                    tom_answer_llm = self.find_answer_fuzzy(scenario.tom_question,tom_inference)
+                    file.write(f"fuzzywuzzy: {tom_answer_llm}\n\n")
             except:
                 self.issues.append({'type': 'TOM','question': scenario.tom_question, 'inference': tom_inference, 'game': current_game})
                 tom_answer_llm = '2'
@@ -391,7 +413,13 @@ class TestLLMCoordination:
             jp_inference = self.run_inference(scenario.jp_directive, scenario.game_desc, scenario.jp_question)
             self.log['JP_ANSWERS'].append(jp_inference)
             try:
-                jp_answer_llm = self.find_answer_fuzzy(scenario.jp_question, jp_inference)
+                with open('question_inference_log.txt', 'a') as file:
+                    file.write('training example ' + str(self.counter) + ' :\n')
+                    lines = scenario.jp_question.split('\n')
+                    last_lines = '\n'.join(lines[-10:]) if len(lines) >= 10 else scenario.jp_question
+                    file.write(f"JP QUESTION:\n{last_lines}\nINFERENCE: {jp_inference}\n")
+                    jp_answer_llm = self.find_answer_fuzzy(scenario.jp_question, jp_inference)
+                    file.write(f"fuzzywuzzy: {jp_answer_llm}\n\n")
             except:
                 self.issues.append({'type': 'TOM', 'question': scenario.jp_question, 'inference': jp_inference, 'game': current_game})
                 jp_answer_llm = '2'
@@ -400,6 +428,7 @@ class TestLLMCoordination:
                   1 if tom_answer_llm in scenario.tom_answer_ordinal.split(',') else 0, 
                   1 if jp_answer_llm in scenario.jp_answer_ordinal.split(',') else 0] 
 
+        self.counter += 1
         return np.array(scores), current_game
     
     def evaluate_llm(self):
@@ -496,7 +525,7 @@ def extract_test_df(df, n):
     
 TEST = False 
 if __name__ == '__main__':
-    df = pd.read_csv('~/llm_coordination_suite/single_turn_evals/data/single_turn_trials_march_2.csv')
+    df = pd.read_csv('~/llm_coordination/src/reasoning_evals/data/single_turn_trials_march_2.csv')
     # if TEST:
     #     df = extract_test_df(df, 2)
     game_name = 'all'
@@ -506,8 +535,8 @@ if __name__ == '__main__':
     # model_type = 'mistral'
     # model = 'mistralai/Mixtral-8x7B-Instruct-v0.1'
     # model_type = 'mistral'
-    # model = 'lmsys/vicuna-7b-v1.5'
-    # model_type = 'vicuna'
+    model = 'lmsys/vicuna-7b-v1.5'
+    model_type = 'vicuna'
     # model = 'lmsys/vicuna-13b-v1.5'
     # model_type = 'vicuna'
     # model = 'lmsys/vicuna-33b-v1.3'
@@ -518,8 +547,8 @@ if __name__ == '__main__':
     # model_type = 'llama'
     # model = 'random'
     # model_type = 'baseline'
-    model = 'gpt-35-turbo'
-    model_type = 'openai'
+    # model = 'gpt-35-turbo'
+    # model_type = 'openai'
     # model = 'gpt-4-0125'
     # model_type = 'openai'
     timestamp = datetime.now()
@@ -527,7 +556,7 @@ if __name__ == '__main__':
         model_nm = model.split('/')[-1]
     else:
         model_nm = model
-    evaluator = TestLLMCoordination(df, game_name, model, model_type, f'/home/saaket/llm_coordination_suite/single_turn_evals/logs/{game_name}_{model_type}_{model_nm}')
+    evaluator = TestLLMCoordination(df, game_name, model, model_type, f'/home/anthony/llm_coordination/logs/{game_name}_{model_type}_{model_nm}')
     results = evaluator.evaluate_llm()
     result_table = format_results(results)
     print('TEST FILE: ', game_name)
