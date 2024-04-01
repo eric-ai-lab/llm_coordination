@@ -1,48 +1,30 @@
-Code repository for the paper "Evaluating Multi-Agent Coordination Abilities in Large Language Models" (https://arxiv.org/abs/2310.03903)
+Code repository for the paper "LLM-Coordination: Evaluating and Analyzing Multi-agent Coordination Abilities in Large Language Models"
 
-Abstract: A pivotal aim in contemporary AI research is to develop agents proficient in multi-agent coordination, enabling effective collaboration with both humans and other systems. Large Language Models (LLMs), with their notable ability to understand, generate, and interpret language in a human-like manner, stand out as promising candidates for the development of such agents. In this study, we build and assess the effectiveness of agents crafted using LLMs in various coordination scenarios. We introduce the LLM-Coordination (LLM-Co) Framework, specifically designed to enable LLMs to play coordination games. With the LLM-Co framework, we conduct our evaluation with three game environments and organize the evaluation into five aspects: Theory of Mind, Situated Reasoning, Sustained Coordination, Robustness to Partners, and Explicit Assistance. First, the evaluation of the Theory of Mind and Situated Reasoning reveals the capabilities of LLM to infer the partner's intention and reason actions accordingly. Then, the evaluation around Sustained Coordination and Robustness to Partners further showcases the ability of LLMs to coordinate with an unknown partner in complex long-horizon tasks, outperforming Reinforcement Learning baselines. Lastly, to test Explicit Assistance, which refers to the ability of an agent to offer help proactively, we introduce two novel layouts into the Overcooked-AI benchmark, examining if agents can prioritize helping their partners, sacrificing time that could have been spent on their tasks. This research underscores the promising capabilities of LLMs in sophisticated coordination environments and reveals the potential of LLMs in building strong real-world agents for multi-agent coordination.
-
-
-The Overcooked environment used in this environment is based on https://github.com/HumanCompatibleAI/overcooked_ai/tree/master.
+Abstract: The emergent reasoning and Theory of Mind (ToM) abilities demonstrated by Large Language Models (LLMs) make them promising candidates for developing coordination agents. In this study, we introduce a new LLM-Coordination Benchmark, aimed at a detailed analysis of LLMs within the context of Pure Coordination Games, where participating agents need to cooperate for the most gain. This benchmark evaluates LLMs through two distinct tasks: (1) \emph{Agentic Coordination}, where LLMs act as proactive participants for cooperation in 4 pure cordination games; (2) \emph{Coordination Question Answering (QA)}, where LLMs are prompted to answer 198 multiple-choice questions from the 4 games for evaluation of three key reasoning abilities: Environment Comprehension, ToM Reasoning, and Joint Planning. Furthermore, to enable LLMs for multi-agent coordination, we introduce a Cognitive Architecture for Coordination (CAC) framework that can easily integrate different LLMs as plug-and-play modules for pure coordination games. Our findings indicate that LLM agents equipped with GPT-4-turbo achieve comparable performance to state-of-the-art reinforcement learning methods in games that require commonsense actions based on the environment. Besides, zero-shot coordination experiments reveal that, unlike RL methods, LLM agents are robust to new unseen partners. However, results on Coordination QA show a large room for improvement in the Theory of Mind reasoning and joint planning abilities of LLMs. The analysis also sheds light on how the ability of LLMs to understand their environment and their partner's beliefs and intentions plays a part in their ability to plan for coordination.
 
 ## Installation Instructions 
 ```
-conda create -n llm_coordination python=3.7
+conda create -n llm_coordination python=3.9
 conda activate llm_coordination
 ```
 
 Clone the repository 
 ```
 git clone https://github.com/eric-ai-lab/llm_coordination.git
+cd llm_coordination
+```
+
+Install requirements
+```
+pip install -r requirements.txt
 ```
 
 Build from source
 ```
-pip install -e llm_coordination/
+pip install -e .
 ```
 
-Install requirements for Overcooked Demo 
-```
-pip install -r requirements.txt 
-```
-
-Usage: Visualize Multi-Agent Gameplay
-
-```
-cd src/overcooked_demo/server
-python app.py
-```
-By default the server will run on localhost on port 5003. The default selected model will be gpt-3.5-turbo. Set openai API key and organization using Environment Variables API_KEY="Your_Key" and ORGANIZATION="Your_Organization.
-
-
-## Citation
-```
-@misc{agashe2023evaluating,
-      title={Evaluating Multi-Agent Coordination Abilities in Large Language Models}, 
-      author={Saaket Agashe and Yue Fan and Xin Eric Wang},
-      year={2023},
-      eprint={2310.03903},
-      archivePrefix={arXiv},
-      primaryClass={cs.CL}
-}   
-```
+## Credits 
+The Overcooked environment: https://github.com/HumanCompatibleAI/overcooked_ai/tree/master
+Hanabi Learning Environment: https://github.com/google-deepmind/hanabi-learning-environment
+Hanabi Bot: https://github.com/Zamiell/hanabi-bot
