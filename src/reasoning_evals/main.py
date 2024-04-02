@@ -465,19 +465,7 @@ class TestLLMCoordination:
             scores.append(score)
             self.save_logs(t_num)
             self.clear_logs()
-            # temp_results = {'accuracy': np.mean(np.array(scores), axis=0), 
-            #     'standard error': (np.array(scores).std(axis=0) / np.sqrt(self.num_trials)),
-            #     'Overcooked accuracy': np.mean(np.array(game_wise_scores['Overcooked']), axis=0),
-            #     'Overcooked standard error': np.std(np.array(game_wise_scores['Overcooked']), axis=0) / np.sqrt(self.num_trials),
-            #     'Hanabi accuracy': np.mean(np.array(game_wise_scores['Hanabi']), axis=0),
-            #     'Hanabi standard error': np.std(np.array(game_wise_scores['Hanabi']), axis=0) / np.sqrt(self.num_trials),
-            #     'CollabGames accuracy': np.mean(np.array(game_wise_scores['CollabGames']), axis=0),
-            #     'CollabGames standard error': np.std(np.array(game_wise_scores['CollabGames']), axis=0) / np.sqrt(self.num_trials)
-            #     }
-            # formatted_temp_results = format_results(temp_results)
 
-            # write_results_to_file(model_nm=self.llm.model_name, timestamp=datetime.now(), model_type=self.llm.model_type, result_table=formatted_temp_results, trial_num=t_num)
-            # time.sleep(1.)
         return {'accuracy': np.mean(np.array(scores), axis=0), 
                 'standard error': (np.array(scores).std(axis=0) / np.sqrt(self.num_trials)),
                 'Overcooked accuracy': np.mean(np.array(game_wise_scores['Overcooked']), axis=0),
@@ -533,8 +521,7 @@ def extract_test_df(df, n):
     
 TEST = False 
 if __name__ == '__main__':
-    # df = pd.read_csv('~/llm_coordination_suite/single_turn_evals/data/single_turn_trials_march_2.csv')
-    df = pd.read_csv('/home/saaket/llm_coordination/src/reasoning_evals/data/single_turn_trials_march_21_ectom_updated.csv')
+    df = pd.read_csv('data/single_turn_trials.csv')
     # if TEST:
     #     df = extract_test_df(df, 2)
     game_name = 'all'
@@ -544,8 +531,8 @@ if __name__ == '__main__':
     # model_type = 'mistral'
     # model = 'mistralai/Mixtral-8x7B-Instruct-v0.1'
     # model_type = 'mistral'
-    model = 'lmsys/vicuna-7b-v1.5'
-    model_type = 'vicuna'
+    # model = 'lmsys/vicuna-7b-v1.5'
+    # model_type = 'vicuna'
     # model = 'lmsys/vicuna-13b-v1.5'
     # model_type = 'vicuna'
     # model = 'lmsys/vicuna-33b-v1.3'
@@ -556,16 +543,18 @@ if __name__ == '__main__':
     # model_type = 'llama'
     # model = 'random'
     # model_type = 'baseline'
-    # model = 'gpt-35-turbo'
-    # model_type = 'openai'
-    model = 'gpt-4-0125'
+    model = 'gpt-35-turbo'
     model_type = 'openai'
+    # model = 'gpt-4-0125'
+    # model_type = 'openai'
     timestamp = datetime.now()
     if '/' in model:
         model_nm = model.split('/')[-1]
     else:
         model_nm = model
-    evaluator = TestLLMCoordination(df, game_name, model, model_type, f'/home/saaket/llm_coordination/src/reasoning_evals/logs/{game_name}_{model_type}_{model_nm}')
+    if not os.path.exists('logs'):
+        os.makedirs('logs')
+    evaluator = TestLLMCoordination(df, game_name, model, model_type, f'logs/{game_name}_{model_type}_{model_nm}')
     results = evaluator.evaluate_llm()
     result_table = format_results(results)
     print('TEST FILE: ', game_name)

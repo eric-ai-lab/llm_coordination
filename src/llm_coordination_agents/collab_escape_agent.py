@@ -22,7 +22,7 @@ class bcolors:
 
 
 class LLMAgent():
-    def __init__(self, player_id, temperature=0.6, do_sample=True, max_new_tokens=1000, top_p=0.9, frequency_penalty=0.0, presence_penalty=0.0, api_server=True,  cache_dir=os.getenv('HF_HOME')):
+    def __init__(self, player_id, model, temperature=0.6, do_sample=True, max_new_tokens=1000, top_p=0.9, frequency_penalty=0.0, presence_penalty=0.0, api_server=True,  cache_dir=os.getenv('HF_HOME')):
         self.temperature = temperature
         self.cache_dir = cache_dir
         self.do_sample = do_sample
@@ -34,14 +34,22 @@ class LLMAgent():
         self.device = 'cuda'
         self.cost  = 0
 
-        self.model = 'gpt-4-0125'
-        self.model_name = 'gpt-4-0125'
+        # self.model = 'gpt-4-0125'
+        # self.model_name = 'gpt-4-0125'
         #self.model = 'gpt-35-turbo'
         #self.model_name = 'gpt-35-turbo'
-        self.model_type = 'openai'
+        # self.model_type = 'openai'
         #self.model_name = 'mistralai/Mixtral-8x7B-Instruct-v0.1'
         #self.model_type = 'mistral'
         #self.model = 'mixtral'
+        self.model_name = model
+        if 'gpt' in self.model_name:
+            self.model_type = 'openai'
+            self.model = model
+        else:
+            self.model_type = 'mistral'
+            self.model = 'mixtral'
+
 
         self.player_id = player_id
         self.player_names = ['Alice', 'Bob']

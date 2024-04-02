@@ -49,7 +49,7 @@ class Environment:
         return state_for_llm
 
 class Agent:
-    def __init__(self, start_room, id, name, environment):
+    def __init__(self, start_room, id, name, environment, model):
         self.current_room = start_room
         self.previous_room = None
         self.next_room = start_room  # Where the agent plans to move next
@@ -57,7 +57,7 @@ class Agent:
         self.id = id
         self.environment = environment
         self.press_button_next = False  # Whether the agent plans to press a button next
-        self.llm_agent = LLMAgent(id)
+        self.llm_agent = LLMAgent(id, model)
 
     def plan_move(self, new_room):
         # This method now sets the next_room without actually moving

@@ -794,89 +794,11 @@ class OvercookedGame(Game):
         return obj_dict
 
     def get_policy(self, npc_id, idx):
-
         # Uncomment for Stay Agent -> 
         # return StayAI()
 
         # Uncomment for LLM Policy -> 
         return LLMPolicy()
-
-        # Uncomment for RL agents -> 
-        # agent = get_agent_from_saved_model('/home/saaket/llm_zeroshot_coordination/overcooked_ai/src/human_aware_rl/data/ppo_runs/2023_09_12-16_01_57_ppo_gates/seed0/best', 30)
-        # agent.set_agent_index(idx)
-        # agent.set_mdp(OvercookedGridworld.from_layout_name('soup_passing_door'))
-        # return agent 
-        
-        # Uncomment for BC model -> 
-        # BEST_BC_MODELS_PATH = '/home/saaket/human_aware_rl/human_aware_rl/data/bc_runs/best_bc_model_paths.pickle'
-        # if idx == LLM_PLAYER_IDX:
-        #     return LLMPolicy()
-        # else:
-        #     if npc_id.lower().startswith("rllib"):
-        #         set_global_seed([2888, 7424, 7360, 4467,  184][0])  
-        #         best_bc_models = load_pickle(BEST_BC_MODELS_PATH)
-
-        #         # Load trained human proxy model 
-        #         hp_model, hp_params = load_bc_model_from_path(best_bc_models['test'][LAYOUT_MAP['forced_coordination']])
-        #         hp_params['mdp_params']['layout_name'] = INVERTED_LAYOUT_MAPS[hp_params['mdp_params']['layout_name']]
-        #         hp_agent = get_bc_agent_from_model(hp_model, hp_params)
-        #         hp_agent.set_agent_index(idx)
-        #         return hp_agent
-            # if npc_id.lower().startswith("rllib"):
-            #     best_bc_models = load_pickle(BEST_BC_MODELS_PATH)
-
-            #     # Load trained human proxy model 
-            #     hp_model, hp_params = load_bc_model_from_path(best_bc_models['train'][LAYOUT_MAP['asymmetric_advantages']])
-            #     hp_params['mdp_params']['layout_name'] = INVERTED_LAYOUT_MAPS[hp_params['mdp_params']['layout_name']]
-            #     hp_agent = get_bc_agent_from_model(hp_model, hp_params)
-            #     hp_agent.set_agent_index(1)
-            #     return hp_agent
-            
-        # Remove -> 
-        # return StayAI()
-        # return RunToOnions()
-        
-        # if idx == LLM_PLAYER_IDX:
-        #     # if npc_id.lower().startswith("rllib"):
-        #     #     try:
-        #     #         # Loading rllib agents requires additional helpers
-        #     #         fpath = os.path.join(AGENT_DIR, npc_id, "agent")
-        #     #         fix_bc_path(fpath)
-        #     #         agent = load_agent(fpath, agent_index=idx)
-        #     #         return agent
-        #     #     except Exception as e:
-        #     #         raise IOError(
-        #     #             "Error loading Rllib Agent\n{}".format(e.__repr__())
-        #     #         )
-        #     # else:
-        #     #     try:
-        #     #         fpath = os.path.join(AGENT_DIR, npc_id, "agent.pickle")
-        #     #         with open(fpath, "rb") as f:
-        #     #             return pickle.load(f)
-        #     #     except Exception as e:
-        #     #         raise IOError("Error loading agent\n{}".format(e.__repr__()))
-        #     # 
-        #     return RunToOnions()
-        # else:
-        #     # Best Paths
-        #     # Cramped Room - /home/saaket/overcooked_ai/src/human_aware_rl/imitation/bc_runs/train/cramped_room/seed_13
-        #     # Asymmetric Advantages - /home/saaket/overcooked_ai/src/human_aware_rl/imitation/bc_runs/train/asymmetric_advantages/seed_42
-        #     # Coordination Ring - /home/saaket/overcooked_ai/src/human_aware_rl/imitation/bc_runs/train/coordination_ring/seed_13
-        #     # Forced Coordination - /home/saaket/overcooked_ai/src/human_aware_rl/imitation/bc_runs/train/forced_coordination/seed_7
-        #     # Counter Circuit - /home/saaket/overcooked_ai/src/human_aware_rl/imitation/bc_runs/train/counter_circuit/seed_7
-        #     hp_model_path = f"/home/saaket/overcooked_ai/src/human_aware_rl/imitation/bc_runs/train/cramped_room/seed_13"
-        #     # # else:
-        #     #     # hp_model_path = f"/home/saaket/llm_zeroshot_coordination/overcooked_ai/src/human_aware_rl/imitation/bc_runs/test/cramped_room"
-        #     if npc_id.lower().startswith('rllib'):
-        #         hp_model, hp_params = load_bc_model(hp_model_path)
-        #         hp_model._make_predict_function()
-        #         base_ae = _get_base_ae(hp_params)
-        #         base_env = base_ae.env
-        #         def featurize_fn(state):
-        #             return base_env.featurize_state_mdp(state)
-        #         hp_policy = BehaviorCloningPolicy.from_model(hp_model, hp_params, stochastic=True)
-        #         hp_agent = RlLibAgent(hp_policy, idx, featurize_fn)
-        #         return hp_agent
         # 
 
     def get_data(self):

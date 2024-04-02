@@ -4,10 +4,11 @@ from overcooked_ai_py.mdp.actions import Action, Direction
 import time 
 import numpy as np 
 from tqdm import tqdm 
+import argparse 
 
-def main(layout_name):
+def main(layout_name, model_name):
     mdp = OvercookedGridworld.from_layout_name(layout_name)
-    am = [LLMActionManager(mdp, 'player_0', layout_name), LLMActionManager(mdp, 'player_1', layout_name)]
+    am = [LLMActionManager(mdp, 'player_0', layout_name, model_name), LLMActionManager(mdp, 'player_1', layout_name, model_name)]
     state = mdp.get_standard_start_state()
     print(am[0].llm_agent.model)
     # print(action)
@@ -36,41 +37,37 @@ def main(layout_name):
         score += curr_reward
         if tick % 50 == 0:
             print(f"Current Score: {score}")
-            print(f"Current Cost: {am[0].llm_agent.llm.gpt3_cost + am[1].llm_agent.llm.gpt3_cost}") 
-            print(f"Current Cost (GPT4img): {am[0].llm_agent.llm.gpt4_cost + am[1].llm_agent.llm.gpt4_cost}") 
         print("Current Tick is: ", tick)
         print(mdp.state_string(state))
         print(f"Current score is : {score}")
-        # if tick > 225:
-        # time.sleep(0.5) # Delay to avoid overloading LLM API with calls 
-    gpt_3_cost = am[0].llm_agent.llm.gpt3_cost + am[1].llm_agent.llm.gpt3_cost
-    gpt_4_cost = am[0].llm_agent.llm.gpt4_cost + am[1].llm_agent.llm.gpt4_cost
-    return score, gpt_3_cost, gpt_4_cost
+        time.sleep(0.5) # Delay to avoid overloading LLM API with calls 
+    return score
     
-# Change the argument to main() to test out different maps
+
+parser = argparse.ArgumentParser(description='Run Overcooked benchmark with a specific model.')
+parser.add_argument('model_name', type=str, help='The name of the model to benchmark')
+args = parser.parse_args()
+
+model_name = args.model_name
+print(f'Benchmarking model: {model_name}')
+
 
 if __name__ == '__main__':
-    # LAYOUTS = ['forced_coordination', 'cramped_room', 'counter_circuit_o_1order', 'asymmetric_advantages', 'coordination_ring']
-    LAYOUTS = ['no_counter_door']
-    NUM_TRIALS = 1
+    LAYOUTS = ['forced_coordination', 'cramped_room', 'counter_circuit_o_1order', 'asymmetric_advantages', 'coordination_ring']
+    NUM_TRIALS = 3
     
     for layout_name in LAYOUTS:
         scores = []
         gpt_3_costs = []
         gpt_4_costs = []
         for idx in range(NUM_TRIALS):
-            score, gpt3_cost, gpt4_cost = main(layout_name)
+            score = main(layout_name, model_name)
             scores.append(score)
-            gpt_3_costs.append(gpt3_cost)
-            gpt_4_costs.append(gpt4_cost) 
-            print(' COSTS THIS TRIAL: ', gpt3_cost, gpt4_cost)
 
-        with open(f'/home/saaket/llm_coordination/src/agentic_evals/{layout_name}.txt', 'w') as f:
+        with open(f'{layout_name}.txt', 'w') as f:
             f.write("MODEL: GPT4-turbo",)
             f.write(f"MEAN SCORE: {np.mean(scores)}\n")
             f.write(f"STD ERROR: {np.std(np.array(scores)) / np.sqrt(NUM_TRIALS)}\n")
             f.write(f"SAMPLE SCORES: {scores}\n")
-            f.write(f"TOTAL COST (GPT-35): {np.sum(gpt_3_costs)}\n")
-            f.write(f"TOTAL COST (GPT-4t) (upper bound): {np.sum(gpt_4_costs)}\n")
 
     

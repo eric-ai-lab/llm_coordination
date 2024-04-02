@@ -29,7 +29,7 @@ class bcolors:
     UNDERLINE = '\033[4m'
 
 class LLMAgent:
-    def __init__(self, player_id):
+    def __init__(self, player_id, model):
         self.player_id = player_id
         self.player_names = ['Alice', 'Bob']
         self.partner_pronoun = 'his' if self.player_id == 0 else 'her'
@@ -41,8 +41,15 @@ class LLMAgent:
         # self.model_type = 'openai'
         # self.model = 'mistralai/Mixtral-8x7B-Instruct-v0.1'
         # self.model_type = 'mistral'
-        self.model = 'gpt-4-0125'
-        self.model_type = 'openai'
+        # self.model = 'gpt-4-0125'
+        # self.model_type = 'openai'
+        self.model = model
+        if 'gpt' in self.model:
+            self.model_type = 'openai'
+        else:
+            self.model_type = 'mistral'
+
+
         if self.model_type == 'openai':
             self.client = AzureOpenAI(
                 azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT"), 
@@ -231,8 +238,16 @@ class LLMAgent:
         # self.working_memory_dict = {}
         self.action_history = []
         self.log_csv_dict = {} 
-        self.log_dir = f'/home/saaket/llm_coordination/logs/hanabi'
-        self.traj_dir = f'/home/saaket/llm_coordination/logs/hanabi'
+        self.log_dir = f'logs/hanabi'
+        self.traj_dir = f'logs/hanabi'
+
+        if not os.path.exists(self.log_dir):
+            os.makedirs(self.log_dir)
+
+
+        if not os.path.exists(self.traj_dir):
+            os.makedirs(self.traj_dir)
+            
         self.my_card_uncertainty = []
         self.partner_card_uncertainty = []
         self.prev_state_description = ''

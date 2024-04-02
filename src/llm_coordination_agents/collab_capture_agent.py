@@ -68,7 +68,7 @@ class LLMManager:
 
 
 class LLMAgent:
-    def __init__(self, player_id):
+    def __init__(self, player_id, model):
         self.player_id = player_id
         self.player_names = ['Alice', 'Bob']
         
@@ -84,9 +84,14 @@ class LLMAgent:
         # self.model = 'gpt-35-turbo'
         # self.model_name = 'gpt-35-turbo'
         # self.model_type = 'openai'
-        self.model_name = 'mistralai/Mixtral-8x7B-Instruct-v0.1'
-        self.model_type = 'mistral'
-        self.model = 'mixtral'
+        # self.model_name = 'mistralai/Mixtral-8x7B-Instruct-v0.1'
+        # self.model_type = 'mistral'
+        # self.model = 'mixtral'
+        self.model = model 
+        if 'gpt' in self.model:
+            self.model_type = 'openai'
+        else:
+            self.model_type = 'mistral'
 
         self.llm = LLMManager(model_name=self.model_name, model_type=self.model_type, cache_dir=os.getenv('HF_HOME'))
 
@@ -94,8 +99,15 @@ class LLMAgent:
         
         ### LOGGING ###
         self.time_stamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        self.log_dir = f'/home/saaket/llm_coordination/logs/hanabi'
-        self.traj_dir = f'/home/saaket/llm_coordination/logs/hanabi'
+        self.log_dir = f'logs/collab_capture'
+        self.traj_dir = f'trajs/collab_capture'
+
+        if not os.path.exists(self.log_dir):
+            os.makedirs(self.log_dir)
+
+        if not os.path.exists(self.traj_dir):
+            os.makedirs(self.traj_dir)
+        
         ####
         ### LOGGING ###
         

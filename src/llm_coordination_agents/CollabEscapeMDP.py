@@ -178,10 +178,10 @@ class Game:
         print(state_info)
 
     # handle main gameplay logic and flow
-    def play(self):
+    def play(self, model):
         # create agents
-        self.alice_llm_agent = LLMAgent(player_id=0)
-        self.bob_llm_agent = LLMAgent(player_id=1)
+        self.alice_llm_agent = LLMAgent(0, model)
+        self.bob_llm_agent = LLMAgent(1, model)
 
         self.turn_count = 1
         while not self.game_over:

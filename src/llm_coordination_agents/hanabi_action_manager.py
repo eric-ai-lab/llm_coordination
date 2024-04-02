@@ -8,11 +8,11 @@ import datetime
 def ai_score(fireworks):
     return np.sum(fireworks)
 
-def run_game(game_parameters):
+def run_game(game_parameters, model_name):
     game = pyhanabi.HanabiGame(game_parameters)
     print(game.parameter_string(), end="")
     state = game.new_initial_state()
-    Players = [LLMAgent(0), LLMAgent(1)]
+    Players = [LLMAgent(0, model_name), LLMAgent(1, model_name)]
     time_stamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     model_name = 'random'
     if Players[0].model_type != 'openai':
@@ -41,19 +41,7 @@ def run_game(game_parameters):
     print("")
     print(state)
     print("")
-    try: 
-        print("Score: {}".format(ai_score(state.fireworks())))
-        print("Bombed: {}".format('YES' if state.score() == 0 else 'NO'))
-    except:
-        print(state.fireworks())
-    with open(f'/home/saaket/llm_coordination/logs/hanabi/scores/{game_name}', 'w') as f:
-        f.write("score: {}".format(state.score()))
-        f.write("Bombed: {}".format('YES' if state.score() == 0 else 'NO'))
 
-# if __name__ == "__main__":
-#   # Check that the cdef and library were loaded from the standard paths.
-#   assert pyhanabi.cdef_loaded(), "cdef failed to load"
-#   assert pyhanabi.lib_loaded(), "lib failed to load"
-#   run_game({"players": 2, "random_start_player": False, "seed": 321})
-
-  # Seeds tested - 42, 321
+    # This score is the total number of cards placed without considering bombing 
+    print("Score: {}".format(ai_score(state.fireworks())))
+    print("Bombed: {}".format('YES' if state.score() == 0 else 'NO'))

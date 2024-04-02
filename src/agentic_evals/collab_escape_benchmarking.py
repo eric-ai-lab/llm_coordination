@@ -1,10 +1,17 @@
 import sys 
 import numpy as np
+import argparse
 
-sys.path.append('..')
-from collab_escape.CollabEscapeMDP import Game
+from llm_coordination_agents.CollabEscapeMDP import Game
 from llm_coordination_agents.collab_escape_agent import LLMAgent
 
+
+parser = argparse.ArgumentParser(description='Run Collab Escape benchmark with a specific model.')
+parser.add_argument('model_name', type=str, help='The name of the model to benchmark')
+args = parser.parse_args()
+
+model_name = args.model_name
+print(f'Benchmarking model: {model_name}')
 
 if __name__ == "__main__":
     results = []
@@ -15,13 +22,11 @@ if __name__ == "__main__":
         game = Game()
 
         # run game, start to finish
-        outcome, turns = game.play()
+        outcome, turns = game.play(model_name)
 
         results.append(outcome)
         turn_counts.append(turns)
         print(f"\n\n\n\nGAME {i} FINISHED\n\n\n\n")
-        with open('game_state_mixtral_ToM.txt', 'a') as file:
-            file.write(f"\n\n\n\nGAME {i} FINISHED\n\n\n\n")
     
 
     wins = results.count('win')

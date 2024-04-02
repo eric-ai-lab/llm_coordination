@@ -71,7 +71,7 @@ storage_counter_locations = {
 
 
 class LLMActionManager(object):
-    def __init__(self, mdp, player_name, layout_name): 
+    def __init__(self, mdp, player_name, layout_name, model_name): 
         self.layout_name = layout_name
         self.mdp = mdp 
         self.time_stamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -136,7 +136,7 @@ class LLMActionManager(object):
         }
         self.action_set = LLMActionSet[self.layout_name]
         self.message = ''
-        self.llm_agent = LLMAgent(self.player_id, self.layout_name) 
+        self.llm_agent = LLMAgent(self.player_id, self.layout_name, model_name) 
         self.save_low_level_trajectory = True
         self.prev_directive = 'wait.'
 
@@ -209,9 +209,9 @@ class LLMActionManager(object):
 
     def handle_stalemate(self):
         # Handle case where loc_agent_a = goal_agent_b and loc_agent_b = goal_agent_a  AND  gate closed 
-        if self.selected_action == Action.STAY and self.current_stage not in ['wait.', 'load soup on plate from c0.', 'load soup on plate from c1.']:
+        # if self.selected_action == Action.STAY and self.current_stage not in ['wait.', 'load soup on plate from c0.', 'load soup on plate from c1.']:
             # print(f"Case 1 stalemate for player {self.player_id}. info - {self.selected_action}, {self.current_stage}")
-            self.should_get_stage_from_llm = True 
+            # self.should_get_stage_from_llm = True 
         
         # Handle case goal_agent_a = goal_agent_b
         if 'wait' not in self.prev_directive and self.prev_selection_action != Action.INTERACT and self.selected_action != Action.INTERACT and 'wait' not in self.current_stage:
@@ -224,7 +224,6 @@ class LLMActionManager(object):
                         self.selected_action = self.move_away_deterministic()
         else:
             self.moving_away = False 
-
 
         
     def move_away_random(self):
@@ -258,27 +257,7 @@ class LLMActionManager(object):
             considered_directions.remove(avoid_dirs)
         new_pos_arr = [(self.player_position[0] + d[0], self.player_position[1] + d[1]) for d in considered_directions]
         return self.go_to_position(new_pos_arr, self.player_position, self.player_orientation)
-        # for direction in preferred_directions:
-        #     if direction != (0, 0):
-        #         new_pos = (self.player_position[0] + direction[0], self.player_position[1] + direction[1])
-        #         # # print(f"INFO: starting position {self.player_position}, moving away to new position {new_pos}, moving in direction {direction}")
-        #         if self.mdp.get_terrain_type_at_pos(new_pos) == " ":
-        #             self.should_get_stage_from_llm = True
-        #             return self.go_to_position(new_pos)
-            
-        # remaining_directions = [x for x in all_directions if x not in preferred_directions]
 
-        # for direction in remaining_directions:
-        #     new_pos = (self.player_position[0] + direction[0], self.player_position[1] + direction[1])
-        #     # # print(f"INFO: starting position {self.player_position}, moving away to new position {new_pos}, moving in direction {direction}")
-        #     if self.mdp.get_terrain_type_at_pos(new_pos) == " ":
-        #         self.should_get_stage_from_llm = True
-        #         return self.go_to_position(new_pos)
-        
-       # If no accessible direction is found, wait in place
-        self.should_get_stage_from_llm = True
-        # # print(f"ERROR: No position found to move away to")
-        return Action.STAY 
 
 
     def move_away(self):

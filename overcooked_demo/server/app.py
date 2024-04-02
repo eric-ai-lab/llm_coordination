@@ -672,7 +672,6 @@
 import os
 import sys
 import openai
-# sys.path.append('/home/saaket/overcooked_ai/src')
 
 # Import and patch the production eventlet server if necessary
 # if os.getenv("FLASK_ENV", "production") == "production":
