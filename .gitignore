@@ -142,7 +142,7 @@ src/human_aware_rl/data/bc_runs/bc_testing/
 *~
 *.swp
 *.key
-*.png
+src/*.png
 # sacred config files
 **/slack.json
 # Models and run data
