@@ -6,7 +6,7 @@ Authors: [Saaket Agashe](https://saa1605.github.io/), [Yue Fan](http://www.yfan.
 
 University of California, Santa Cruz
 
-Code repository for the paper "LLM-Coordination: Evaluating and Analyzing Multi-agent Coordination Abilities in Large Language Models"
+Code repository for the paper "[LLM-Coordination: Evaluating and Analyzing Multi-agent Coordination Abilities in Large Language Models](https://arxiv.org/abs/2310.03903)"
 
 ![LLMC-Teaser](assets/LLMC-Teaser.png)
 
