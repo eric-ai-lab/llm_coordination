@@ -106,3 +106,47 @@ def get_user_action(agent_name, action_options):
     else:
         return choice
 
+class GreedyAgent(Agent):
+    def __init__(self, start_room, id, name, environment):
+        super().__init__(start_room, id, name, environment)
+    
+    def decide_next_action(self, thief_location):
+        if self.current_room in self.environment.door_controls.values():
+            door_to_toggle = self.environment.toggle_door(self.current_room)
+            if door_to_toggle is not None and self.should_press_button(thief_location, door_to_toggle):
+                self.plan_press_button()
+            else:
+                self.move_towards_thief(thief_location)
+        else:
+            self.move_towards_thief(thief_location)
+
+    def should_press_button(self, thief_location, door_to_toggle):
+        # Simulate door toggle
+        original_state = self.environment.doors_open[door_to_toggle]
+        self.environment.doors_open[door_to_toggle] = not original_state
+        can_reach_thief_after_toggle = self.can_reach_thief(thief_location)
+
+        # Revert door state after simulation
+        self.environment.doors_open[door_to_toggle] = original_state
+
+        return can_reach_thief_after_toggle
+
+    def can_reach_thief(self, thief_location):
+        # This method checks if the agent can reach the thief from its current position after potentially toggling a door.
+        # Implementing a full pathfinding algorithm here would be ideal but is complex.
+        # For simplicity, let's check direct adjacency as a condition for a "direct path."
+        return thief_location in self.environment.get_accessible_rooms(self.current_room)
+
+    def move_towards_thief(self, thief_location):
+        accessible_rooms = self.environment.get_accessible_rooms(self.current_room)
+        if thief_location in accessible_rooms:
+            self.plan_move(thief_location)
+        else:
+            closest_room = self.find_closest_room_to_thief(accessible_rooms, thief_location)
+            self.plan_move(closest_room)
+
+    def find_closest_room_to_thief(self, accessible_rooms, thief_location):
+        # This would ideally use some pathfinding to find the actual closest room;
+        # however, for simplicity, let's just pick the next accessible room.
+        # This is a naive implementation and may not always choose the optimal path.
+        return accessible_rooms[0] if accessible_rooms else self.current_room

@@ -7,7 +7,7 @@ from queue import Empty, Full, LifoQueue, Queue
 from threading import Lock, Thread
 from time import time
 from multiprocessing import Manager
-
+import sys 
 from overcooked_ai_py.mdp.actions import Action, Direction
 from overcooked_ai_py.mdp.overcooked_mdp import OvercookedGridworld, ObjectState
 # from overcooked_ai_py.planning.planners_simplified import (
@@ -725,12 +725,12 @@ class OvercookedGame(Game):
         
         self.state = self.mdp.get_standard_start_state()
         # self.state.players[0].orientation = Direction.NORTH
-        # self.state.players[1].orientation = Direction.EAST 
-        # self.state.players[0].set_object(ObjectState('dish', self.state.players[0].position))
+        # self.state.players[1].orientation = Direction.EAST
+        # self.state.players[0].set_object(ObjectState('onion', self.state.players[0].position))
         # self.state.players[1].set_object(ObjectState('onion', self.state.players[1].position))
         # # self.state.players[1].set_object(ObjectState('soup', self.state.players[1].position, ('onion', 3, 20)))
-        # self.state.add_object(ObjectState('soup', (3, 0), ('onion', 3, 5)))
-        # self.state.add_object(ObjectState('soup', (4, 1), ('onion', 2, 0)))
+        # self.state.add_object(ObjectState('soup', (4, 1), ('onion', 3, 5)))
+        # self.state.add_object(ObjectState('soup', (3, 0), ('onion', 2, 0)))
         # self.state.add_object(ObjectState('soup', (4, 1), ('onion', 3, 10)))
         # self.state.add_object(ObjectState('onion', (2, 1)))
         # self.state.add_object(ObjectState('onion', (2, 2)))

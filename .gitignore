@@ -181,3 +181,7 @@ overcooked_demo/server/*.txt
 logs/
 src/reasoning_evals/results
 src/reasoning_evals/logs
+src/agentic_evals/*.txt
+src/agentic_evals/results
+src/agentic_evals/game_logs/
+src/agentic_evals/game_trajectories/

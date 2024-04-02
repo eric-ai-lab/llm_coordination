@@ -494,6 +494,7 @@ class HanabiClient:
                 partner_move = {'action_type': 'DISCARD', 'color': previous_move_hanabi.color(), 'rank': previous_move_hanabi.rank()}
             
             selected_move = self.agent.get_next_move(observation, partner_move)
+            # selected_move = observation['legal_moves'][-3]
             print("SELECTED MOVE IS: ", selected_move)
             # {"tableID": 2, "type": 2, "target": 1, "value": "B"} 
             if selected_move['action_type'] == 'PLAY':

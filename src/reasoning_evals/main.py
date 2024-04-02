@@ -19,7 +19,7 @@ from dataclasses import dataclass
 from fuzzywuzzy import process
 import time 
 from datetime import datetime
-
+ISSUES = []
 
 @dataclass
 class EvalDataPoint:
@@ -253,17 +253,19 @@ class TestLLMCoordination:
         elif self.model_type == 'vicuna' or self.llm.model_type == 'llama':
 
             messages = [
-                {"role": "system", "content": "A chat between a curious user and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the user's questions."},
+                # {"role": "system", "content": "A chat between a curious user and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the user's questions."},
                 {"role": "user", "content": game_desc},
                 {"role": "assistant", "content": 'I understand the game. Please tell me how I can help'},
                 {"role": "user", "content": directive},
                 {"role": "assistant", "content": 'I understand. Plase provide the scenario.'},
                 {"role": "user", "content": question + ' Think step by step. '}, 
-
             ]
         
-
-        inference = self.llm.inference_fn(messages)
+        try:
+            inference = self.llm.inference_fn(messages)
+        except:
+            inference = 'Explanation: Blah.\n Answer: Z.'
+            ISSUES.append(inference)
         # print(f"INFERENCE: ", inference)
         return inference
 
@@ -413,9 +415,11 @@ class TestLLMCoordination:
                 res, current_game = self.test_one_scenario(sc)
                 results.append(res)
                 game_wise_results[current_game].append(res)
-                # time.sleep(0.5)
-                # self.save_logs(t_num)
+                time.sleep(0.5)
+                self.save_logs(t_num)
                 # print(game_wise_results)
+                if sc % 10 ==0:
+                    print("COST SO FAR: ", self.llm.cost)
                 
             
             results = np.array(results)
@@ -425,6 +429,10 @@ class TestLLMCoordination:
             for game in game_wise_scores:
                 game_wise_scores[game].append(game_wise_score[game])
             print("GAME WISE SCORES: ", game_wise_scores)
+            try:
+                print("COST FOR THIS TRIAL WAS: ", self.llm.cost)
+            except:
+                pass
             scores.append(score)
             self.save_logs(t_num)
             self.clear_logs()
@@ -496,12 +504,13 @@ def extract_test_df(df, n):
     
 TEST = False 
 if __name__ == '__main__':
-    df = pd.read_csv('~/llm_coordination_suite/single_turn_evals/data/single_turn_trials_march_2.csv')
+    # df = pd.read_csv('~/llm_coordination_suite/single_turn_evals/data/single_turn_trials_march_2.csv')
+    df = pd.read_csv('/home/saaket/llm_coordination/src/reasoning_evals/data/single_turn_trials_march_21_ectom_updated.csv')
     # if TEST:
     #     df = extract_test_df(df, 2)
     game_name = 'all'
-    # if 'Game' not in df:
-    #     df['Game'] = game_name
+    if 'Game' not in df:
+        df['Game'] = game_name
     # model = 'mistralai/Mistral-7B-Instruct-v0.2'
     # model_type = 'mistral'
     # model = 'mistralai/Mixtral-8x7B-Instruct-v0.1'
@@ -518,16 +527,16 @@ if __name__ == '__main__':
     # model_type = 'llama'
     # model = 'random'
     # model_type = 'baseline'
-    model = 'gpt-35-turbo'
-    model_type = 'openai'
-    # model = 'gpt-4-0125'
+    # model = 'gpt-35-turbo'
     # model_type = 'openai'
+    model = 'gpt-4-0125'
+    model_type = 'openai'
     timestamp = datetime.now()
     if '/' in model:
         model_nm = model.split('/')[-1]
     else:
         model_nm = model
-    evaluator = TestLLMCoordination(df, game_name, model, model_type, f'/home/saaket/llm_coordination_suite/single_turn_evals/logs/{game_name}_{model_type}_{model_nm}')
+    evaluator = TestLLMCoordination(df, game_name, model, model_type, f'/home/saaket/llm_coordination/src/reasoning_evals/logs/{game_name}_{model_type}_{model_nm}')
     results = evaluator.evaluate_llm()
     result_table = format_results(results)
     print('TEST FILE: ', game_name)
@@ -571,6 +580,9 @@ if __name__ == '__main__':
         f.write(f"CollabGames Theory of Mind Score: {result_table['CollabGames accuracy'][1]} +/- {result_table['CollabGames standard error'][1]}\n")
         f.write(f"CollabGames Joint Planning Score: {result_table['CollabGames accuracy'][2]} +/- {result_table['CollabGames standard error'][2]}\n")
         f.write(f"Problems: {evaluator.issues}\n")
+    print(ISSUES)
+
+    
         
         
 

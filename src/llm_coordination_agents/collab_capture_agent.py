@@ -45,7 +45,7 @@ class LLMManager:
         else:
             self.client = OpenAI(
                 api_key="EMPTY",
-                base_url="http://localhost:8006/v1"
+                base_url="http://localhost:8000/v1"
             )
             self.inference_fn = self.run_openai_inference                    
 
@@ -80,14 +80,14 @@ class LLMAgent:
         self.write_to_cache = False 
         self.save_trajectory = True # True 
 
-        self.model = 'gpt-4-0125'
-        self.model_name = 'gpt-4-0125'
+        # self.model = 'gpt-4-0125'
+        # self.model_name = 'gpt-4-0125'
         # self.model = 'gpt-35-turbo'
         # self.model_name = 'gpt-35-turbo'
-        self.model_type = 'openai'
-        # self.model_name = 'mistralai/Mixtral-8x7B-Instruct-v0.1'
-        # self.model_type = 'mistral'
-        # self.model = 'mixtral'
+        # self.model_type = 'openai'
+        self.model_name = 'mistralai/Mixtral-8x7B-Instruct-v0.1'
+        self.model_type = 'mistral'
+        self.model = 'mixtral'
 
         self.llm = LLMManager(model_name=self.model_name, model_type=self.model_type, cache_dir=os.getenv('HF_HOME'))
 

@@ -39,8 +39,10 @@ class LLMAgent:
         # self.model = 'gpt-3.5-turbo-1106'
         # self.model = 'gpt-35-turbo'
         # self.model_type = 'openai'
-        self.model = 'mistralai/Mixtral-8x7B-Instruct-v0.1'
-        self.model_type = 'mistral'
+        # self.model = 'mistralai/Mixtral-8x7B-Instruct-v0.1'
+        # self.model_type = 'mistral'
+        self.model = 'gpt-4-0125'
+        self.model_type = 'openai'
         if self.model_type == 'openai':
             self.client = AzureOpenAI(
                 azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT"), 
@@ -234,6 +236,7 @@ class LLMAgent:
         self.my_card_uncertainty = []
         self.partner_card_uncertainty = []
         self.prev_state_description = ''
+        self.no_interpretation_ablation = False  
         for i in range(5):
             self.my_card_uncertainty.append(0)
             self.partner_card_uncertainty.append(0)
@@ -342,6 +345,8 @@ class LLMAgent:
 
         return description
 
+    # def _get_
+
     def _get_legal_moves(self, observation):
         self.transformed = []
         moves = observation.legal_moves()
@@ -440,6 +445,14 @@ class LLMAgent:
     #         add_to_dict_list(self.log_csv_dict, 'Epistemic Information', partner_action_inference_description)
     #     return partner_action_inference_description
     def _infer_partner_action(self, episodic_memory, working_memory, description):
+        if self.no_interpretation_ablation:
+            if len(episodic_memory[1-self.player_id])>0:
+                partners_most_recent_action = episodic_memory[1-self.player_id][-1]
+                partner_action_inference_description = f"{self.player_names[1-self.player_id]}'s last action: {partners_most_recent_action}.\n"
+                self.partner_action_inference_string = partner_action_inference_description
+                return partner_action_inference_description
+            else:
+                return ''
         partner_action_inference_description = ''
         if len(episodic_memory[1-self.player_id])>0:
             # Extract partner action and the state they used to make their decision 
@@ -563,6 +576,10 @@ class LLMAgent:
         else:
             selected_move = np.random.choice(self.transformed)
         return selected_move
+    
+    # def get_true_card(self, state):
+    #     # After a card has been played, we can see what it was. do this before adding it to action history 
+    #     state.
 
     
     def get_next_move(self, observation, episodic_memory, working_memory):
@@ -720,7 +737,7 @@ class LLMAgentHanabiLive(LLMAgent):
         elif move['action_type'] == 'REVEAL_COLOR':
             return f"Reveal {self.player_names[1-self.player_id]}'s {self.c_map[move['color']]} color cards."
         elif move['action_type'] == 'REVEAL_RANK':
-            return f"Reveal {self.player_names[1-self.player_id]}'s rank {move['rank']+1} cards."
+            return f"Reveal {self.player_names[1-self.player_id]}'s rank {move['rank']} cards."
         
     def convert_pyhanabi_partner_move(self, move):
         if move['action_type'] == 'DISCARD':
@@ -728,7 +745,7 @@ class LLMAgentHanabiLive(LLMAgent):
         elif move['action_type'] == 'PLAY':
             return f"played {move['color']} {move['rank'] + 1} card."
         elif move['action_type'] == 'REVEAL_COLOR':
-            return f"revealed my {self.c_map[move['color']]} color cards."
+            return f"revealed my {move['color']} color cards."
         elif move['action_type'] == 'REVEAL_RANK':
             return f"revealed my rank {move['rank']+1} cards." 
 
@@ -927,6 +944,14 @@ class LLMAgentHanabiLive(LLMAgent):
         
         # print('Hanabi Selected Move: ', observation.legal_moves()[selected_move_idx]) 
         add_to_dict_list(self.log_csv_dict, 'Selected Action in Hanabi Space', observation["legal_moves"][selected_move_idx])
+        
+        df = pd.DataFrame(self.log_csv_dict)
+        if self.model_type == 'openai':
+            df.to_csv(f"{self.log_dir}/{self.player_names[self.player_id]}_{self.model}_{self.time_stamp}.csv")
+            np.save(f'{self.traj_dir}/{self.player_names[self.player_id]}_{self.model}_{self.time_stamp}.npy', self.action_history)
+        else:
+            df.to_csv(f"{self.log_dir}/{self.player_names[self.player_id]}_Mixtral_{self.time_stamp}.csv")
+            np.save(f'{self.traj_dir}/{self.player_names[self.player_id]}_Mixtral_{self.time_stamp}.npy', self.action_history)
 
         self.prev_working_memory = self.working_memory.copy()
         return observation["legal_moves"][selected_move_idx]

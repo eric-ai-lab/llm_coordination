@@ -30,7 +30,7 @@ def extract_location(s):
         pattern = r'([a-z])(\d+)'
         match = re.search(pattern, s)
 
-        # Print the match
+        # # print the match
         if match:
             return match.group(1), match.group(2)
         else:
@@ -143,7 +143,7 @@ class LLMActionManager(object):
     
 
     def get_next_move(self, state, other_player_message):
-        print(f"GET NEXT MOVE PLAYER {self.player_id}")
+        # print(f"GET NEXT MOVE PLAYER {self.player_id}")
         # Handle player and partner variables 
         self.set_player_pos_or(state) 
         self.message = ''
@@ -158,6 +158,8 @@ class LLMActionManager(object):
         # if previous stage is complete, get new stage from llm 
         if self.should_get_stage_from_llm:
             self.get_stage_from_llm(state, other_player_message)         
+        
+        print(self.current_stage)
 
         if 'wait' in self.current_stage.lower():
             self.selected_action = Action.STAY 
@@ -186,7 +188,7 @@ class LLMActionManager(object):
                     # elif 'deliver' in self.current_stage:
                     #     self.selected_action = self.place(state)
                     else:
-                        print(f"{bcolors.FAIL}ERROR: Unknown action type in {self.current_stage}{bcolors.FAIL}")
+                        # print(f"{bcolors.FAIL}ERROR: Unknown action type in {self.current_stage}{bcolors.FAIL}")
                         self.selected_action = Action.STAY
         
         self.handle_stalemate()
@@ -207,15 +209,15 @@ class LLMActionManager(object):
 
     def handle_stalemate(self):
         # Handle case where loc_agent_a = goal_agent_b and loc_agent_b = goal_agent_a  AND  gate closed 
-        # if self.selected_action == Action.STAY and self.current_stage not in ['wait.', 'load soup on plate from c0.', 'load soup on plate from c1.']:
-        #     print(f"Case 1 stalemate for player {self.player_id}. info - {self.selected_action}, {self.current_stage}")
-        #     self.should_get_stage_from_llm = True 
+        if self.selected_action == Action.STAY and self.current_stage not in ['wait.', 'load soup on plate from c0.', 'load soup on plate from c1.']:
+            # print(f"Case 1 stalemate for player {self.player_id}. info - {self.selected_action}, {self.current_stage}")
+            self.should_get_stage_from_llm = True 
         
         # Handle case goal_agent_a = goal_agent_b
         if 'wait' not in self.prev_directive and self.prev_selection_action != Action.INTERACT and self.selected_action != Action.INTERACT and 'wait' not in self.current_stage:
             if self.player_position == self.prev_position and self.prev_orienation == self.player_orientation and self.should_get_stage_from_llm == False:
                 if int(self.player_id) == 1:
-                    print(f"Case 2 stalemate. info prev_directive - {self.prev_directive} prev_selected_action - {self.prev_selection_action} - current_stage - {self.current_stage}")
+                    # print(f"Case 2 stalemate. info prev_directive - {self.prev_directive} prev_selected_action - {self.prev_selection_action} - current_stage - {self.current_stage}")
                     if self.prev_position == self.player_position and self.prev_directive == 'move away deterministic':
                         self.selected_action = self.move_away_deterministic(avoid_dirs=self.prev_selection_action)
                     else:
@@ -259,7 +261,7 @@ class LLMActionManager(object):
         # for direction in preferred_directions:
         #     if direction != (0, 0):
         #         new_pos = (self.player_position[0] + direction[0], self.player_position[1] + direction[1])
-        #         # print(f"INFO: starting position {self.player_position}, moving away to new position {new_pos}, moving in direction {direction}")
+        #         # # print(f"INFO: starting position {self.player_position}, moving away to new position {new_pos}, moving in direction {direction}")
         #         if self.mdp.get_terrain_type_at_pos(new_pos) == " ":
         #             self.should_get_stage_from_llm = True
         #             return self.go_to_position(new_pos)
@@ -268,14 +270,14 @@ class LLMActionManager(object):
 
         # for direction in remaining_directions:
         #     new_pos = (self.player_position[0] + direction[0], self.player_position[1] + direction[1])
-        #     # print(f"INFO: starting position {self.player_position}, moving away to new position {new_pos}, moving in direction {direction}")
+        #     # # print(f"INFO: starting position {self.player_position}, moving away to new position {new_pos}, moving in direction {direction}")
         #     if self.mdp.get_terrain_type_at_pos(new_pos) == " ":
         #         self.should_get_stage_from_llm = True
         #         return self.go_to_position(new_pos)
         
        # If no accessible direction is found, wait in place
         self.should_get_stage_from_llm = True
-        # print(f"ERROR: No position found to move away to")
+        # # print(f"ERROR: No position found to move away to")
         return Action.STAY 
 
 
@@ -302,14 +304,14 @@ class LLMActionManager(object):
         # Try to move in the opposite direction of the other player
         for direction in [(x_dir, 0), (0, y_dir)]:
             new_pos = (self.player_position[0] + direction[0], self.player_position[1] + direction[1])
-            # print(f"INFO: starting position {self.player_position}, moving away to new position {new_pos}, moving in direction {direction}")
+            # # print(f"INFO: starting position {self.player_position}, moving away to new position {new_pos}, moving in direction {direction}")
             if self.mdp.get_terrain_type_at_pos(new_pos) == " ":
                 self.should_get_stage_from_llm = True
                 return self.go_to_position(new_pos)
 
         # If no accessible direction is found, wait in place
         self.should_get_stage_from_llm = True
-        # print(f"ERROR: No position found to move away to")
+        # # print(f"ERROR: No position found to move away to")
         return Action.STAY
     
     def move_to(self, location, location_id=0):
@@ -343,7 +345,7 @@ class LLMActionManager(object):
             self.should_get_stage_from_llm = True 
             return Action.INTERACT
         else:
-            # print(f"ERROR: Already holding object, cannot pick up {item}")
+            # # print(f"ERROR: Already holding object, cannot pick up {item}")
             return Action.STAY
         
     def load_plate(self, state, location_id):
@@ -365,7 +367,7 @@ class LLMActionManager(object):
             self.should_get_stage_from_llm = True 
             return Action.INTERACT
         else:
-            # print(f"ERROR: Not holding {item} cannot complete")
+            # # print(f"ERROR: Not holding {item} cannot complete")
             return Action.STAY
     
     def open(self, state):
@@ -460,26 +462,26 @@ class LLMActionManager(object):
     def _populate_pot_states(self, state):
         for idx, pot_pos in enumerate(self.object_location['c']):
             if not state.has_object(pot_pos):
-                # print(f"{bcolors.OKGREEN}SOUP IS NOT COOKING in c{idx} and there are 0 onions{bcolors.ENDC}")
+                # # print(f"{bcolors.OKGREEN}SOUP IS NOT COOKING in c{idx} and there are 0 onions{bcolors.ENDC}")
                 self.state_for_llm['num_onions_in_pot'][idx] = 0 
                 self.state_for_llm['soup_in_cooker_status'][idx] = 'not cooking'
                 self.state_for_llm['cooker_status'][idx] = 'off'
             else:
                 soup = state.get_object(pot_pos)
                 if self.is_ready(soup):
-                    # print(f"{bcolors.OKGREEN}SOUP IS READY in c{idx} {bcolors.ENDC}")
+                    # # print(f"{bcolors.OKGREEN}SOUP IS READY in c{idx} {bcolors.ENDC}")
                     self.state_for_llm['soup_in_cooker_status'][idx] = 'cooked'
                     self.state_for_llm['cooker_status'][idx] = 'off'
                     self.state_for_llm['num_onions_in_pot'][idx] = 3
                 elif self.is_cooking(soup):
-                    # print(f"{bcolors.OKGREEN}SOUP IS COOKING in c{idx} {bcolors.ENDC}")
+                    # # print(f"{bcolors.OKGREEN}SOUP IS COOKING in c{idx} {bcolors.ENDC}")
                     self.state_for_llm['soup_in_cooker_status'][idx] = 'still cooking'
                     self.state_for_llm['cooker_status'][idx] = 'on'
                     self.state_for_llm['num_onions_in_pot'][idx] = 3
                     _, _, cook_time = soup.state 
                     self.state_for_llm['soup_in_cooker_remaining_time'][idx] = cook_time
                 else:
-                    # print(f"{bcolors.OKGREEN}SOUP IS NOT COOKING in c{idx} and there are {self.state_for_llm['num_onions_in_pot'][idx]} onions {bcolors.ENDC}")
+                    # # print(f"{bcolors.OKGREEN}SOUP IS NOT COOKING in c{idx} and there are {self.state_for_llm['num_onions_in_pot'][idx]} onions {bcolors.ENDC}")
                     _, num_ingredients, _ = soup.state 
                     self.state_for_llm['soup_in_cooker_status'][idx] = 'not cooking'
                     self.state_for_llm['cooker_status'][idx] = 'off'
@@ -515,7 +517,7 @@ class LLMActionManager(object):
         
         self._populate_counter_objects(state, counter_type='kitchen')
 
-        # print(f"{bcolors.FAIL}{self.state_for_llm['counter_objects']}{bcolors.ENDC}")
+        # # print(f"{bcolors.FAIL}{self.state_for_llm['counter_objects']}{bcolors.ENDC}")
         # What are the 2 players holding? 
         if state_dict['players'][int(self.player_id)]['held_object'] != None:
             if state_dict['players'][int(self.player_id)]['held_object']['name']  == 'dish':
@@ -566,9 +568,9 @@ class LLMActionManager(object):
         #     else:
         #         self.current_stage = prev_stage
         # if self.current_stage == 'wait.':
-        #     # print("Inside wait: ", self.state_for_llm)
+        #     # # print("Inside wait: ", self.state_for_llm)
         #     if self.state_for_llm[self.player_id]['held_object'] == 'onion' and (self.state_for_llm['cooker_status'][0] == 'on' or self.state_for_llm['soup_in_cooker_status'][0] == 'cooked'):
-        #         # print("MOVING AWAY FOR PLAYER ", self.player_id)
+        #         # # print("MOVING AWAY FOR PLAYER ", self.player_id)
         #         self.current_stage = 'move away.'
         
         self.should_get_stage_from_llm = False 
@@ -583,7 +585,7 @@ class LLMActionManager(object):
         
         self._populate_counter_objects(state, counter_type='kitchen')
 
-        # print(f"{bcolors.FAIL}{self.state_for_llm['counter_objects']}{bcolors.ENDC}")
+        # # print(f"{bcolors.FAIL}{self.state_for_llm['counter_objects']}{bcolors.ENDC}")
         # What are the 2 players holding? 
         if state_dict['players'][int(self.player_id)]['held_object'] != None:
             if state_dict['players'][int(self.player_id)]['held_object']['name']  == 'dish':
@@ -613,11 +615,11 @@ class LLMActionManager(object):
             # Do nothing 
             return 
         else:
-            print(f"[COMMUNICATION] Other player said: {other_player_message}")
+            # print(f"[COMMUNICATION] Other player said: {other_player_message}")
             if self.current_stage in self.action_set['cooker']:
                 self.current_stage = 'move away.'
             else:
-                print("[COMMUNICATION] Carrying on action since it naturally moves me away. ")
+                # print("[COMMUNICATION] Carrying on action since it naturally moves me away. ")
                 pass
             
     def set_player_pos_or(self, state):
@@ -670,10 +672,10 @@ class LLMActionManager(object):
 
         for point in adjacent_points:
             if point[0] >= 0 and point[1] >=0 and point[0] < self.mdp.width and point[1] < self.mdp.height:
-                # # print(point, sys.stderr)
+                # # # print(point, sys.stderr)
                 
                 if self.mdp.get_terrain_type_at_pos(point) == " " and point != self.other_player_position:
-                    # # print('point and other player: ', point, self.other_player_position)    
+                    # # # print('point and other player: ', point, self.other_player_position)    
                     empty_points.append(point)
 
         return empty_points
@@ -685,10 +687,10 @@ class LLMActionManager(object):
 
         for point in adjacent_points:
             if point[0] >= 0 and point[1] >=0 and point[0] < self.mdp.width and point[1] < self.mdp.height:
-                # # print(point, sys.stderr)
+                # # # print(point, sys.stderr)
                 
                 if self.mdp.get_terrain_type_at_pos(point) == " ":
-                    # # print('point and other player: ', point, self.other_player_position)    
+                    # # # print('point and other player: ', point, self.other_player_position)    
                     accessible_points.append(point)
                 elif point == self.other_player_position:
                     accessible_points.append(point)

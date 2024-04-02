@@ -51,20 +51,20 @@ def add_to_dict_list(dictionary, key, item):
         dictionary[key].append(item)
         
 EnvDescriptions= {
-    'cramped_room': 'The environment is rectangular with 2 onions dispensers (o0, o1), cooker (c0), plate dispenser (p0) and delivery area (d0). Additionally there are kitchen counters (k0 to k8) which can be used to temporarily store onions and plates while you do something else. Objects on counters can be picked up later and should be considered as they may be closer than items in dispensers.',
+    'cramped_room': 'Environment Details: The environment is rectangular with 2 onions dispensers (o0, o1), cooker (c0), plate dispenser (p0) and delivery area (d0). Additionally there are kitchen counters (k0 to k8) which can be used to temporarily store onions and plates while you do something else. Objects on counters can be picked up later and should be considered as they may be closer than items in dispensers.',
     
-    'no_counter_door': 'Environment Details: The environment is rectangular with 2 onions dispensers (o0, o1), cooker (c0) and plate dispenser (p0). The delivery area (d0) is inaccessible behind closed gates and can be accessed by opening one of the gates (g0, g1). A gate can only be opened by a player if they are not carrying an object. Once the door is opened it will only stay open for a brief time and then close on its own',
+    'no_counter_door': 'Environment Details: The environment is cramped with little space to move aroundrectangular with 2 onions dispensers (o0, o1), cooker (c0) and plate dispenser (p0). The delivery area (d0) is inaccessible behind closed gates and can be accessed by opening one of the gates (g0, g1). A gate can only be opened by a player if they are not carrying an object. Once the door is opened it will only stay open for a brief time and then close on its own',
 
     'soup_passing':"Environment Details: The environment is divided into 2 partitions. Alice is in the left partition with access to onion dispenser (o0), plate dispenser (p1), cooker (c0), delivery area (d0) and kitchen counters (k0, k1, k8, k11, k12). Bob is in the right partition with access to onion dispenser (o1), plate dispenser (p0), cooker (c1) and kitchen counters (k3, k4, k6, k10, k14, k15). Only Alice has access to the delivery area (d0). There are shared counters (s0, s1, s2, s3) which can be used to pass onions, plates or cooked soup from one player to the other. Note that the objects on the shared counters can be accessed by both players. Objects on counters can be picked up later and should be considered as they may be closer than items in dispensers. ",
 
-    'soup_passing_door':"The environment is divided into 2 partitions. Alice is in the left partition with access to onion dispenser o0, plate dispenser p1, cooker c0, and delivery area d0. Bob is in the right partition with access to onion dispenser o1, plate dispenser p0, and cooker c1.  The two partitions are connected by gate g0 which can be opened if a player is holding nothing. Opening the gate will allow players to move freely between partitions.  The gate will close after enough time automatically. ",
+    'soup_passing_door':"Environment Details: The environment is divided into 2 partitions. Alice is in the left partition with access to onion dispenser o0, plate dispenser p1, cooker c0, and delivery area d0. Bob is in the right partition with access to onion dispenser o1, plate dispenser p0, and cooker c1.  The two partitions are connected by gate g0 which can be opened if a player is holding nothing. Opening the gate will allow players to move freely between partitions.  The gate will close after enough time automatically. ",
 
     'asymmetric_advantages' : 'Environment Details: There are two partitions in the current environment. Bob is in the left partition with access to onion dispenser o0, delivery area d0, plate dispenser p0 and kitchen counters k0, k1, k2, k3, k4, k11, k12, k16, k18, k20, k21, k22, k23. Alice is in the right partition and has access to onion dispenser o1, delivery area d1, plate dispenser p1 and kitchen counters k6, k7, k8, k9, k10, k14, k15, k17, k19, k25, k26, k27, k28. Both have access to both cookers c0 and c1 which are on the partition line. Kitchen counters (k0 to k28) which can be used to temporarily store onions and plates while you do something else. Objects on counters can be picked up later and should be considered as they may be closer than items in dispensers.',
 
-    'forced_coordination' : 'Layout Details: The environment is split into two partitions, one with each player. In the right partition, Alice has access to cookers (c0, c1),  delivery area (d0) and kitchen counters (k6, k8, k12). In the left partition, Bob has access to onion dispensers (o0, o1), plate dispenser (p0) and kitchen counters (k1, k10). Kitchen counters can be used to temporarily store onions and plates while you do something else. Both players have access to shared counters (s0, s1, s2) which can be used to transfer onions and plates to the other player depending on the situation. Note that the objects on the shared counters can be accessed by both players. ',
+    'forced_coordination' : 'Environment Details: The environment is split into two partitions, one with each player. In the right partition, Alice has access to cookers (c0, c1),  delivery area (d0) and kitchen counters (k6, k8, k12). In the left partition, Bob has access to onion dispensers (o0, o1), plate dispenser (p0) and kitchen counters (k1, k10). Kitchen counters can be used to temporarily store onions and plates while you do something else. Both players have access to shared counters (s0, s1, s2) which can be used to transfer onions and plates to the other player depending on the situation. Note that the objects on the shared counters can be accessed by both players. ',
 
 
-    'coordination_ring': 'The environment is narrow and circular, featuring onion dispensers (o0, o1), plate dispenser (p0), cookers (c0, c1), and a delivery area (d0). Additionally there are kitchen counters (k0 to k10) which should only be used to temporarily store onions and plates while you do something else. Objects on counters can be picked up later and should be considered as they may be closer than items in dispensers',
+    'coordination_ring': 'Environment Details: The environment is narrow and circular with room for only one player to walk along a path or access places. It features onion dispensers (o0, o1), plate dispenser (p0), cookers (c0, c1), and a delivery area (d0). Additionally there are kitchen counters (k0 to k10) which should only be used to temporarily store onions and plates while you do something else. Objects on counters can be picked up later and should be considered as they may be closer than items in dispensers',
 
     'counter_circuit_o_1order': 'Environment Details: The environment is circular with two onion dispensers (o0, o1), plate dispenser (p0), cookers (c0, c1) and delivery area d0. There are also the shared counters (s0, s1, s2, s3) which can be used to pass objects from one player to the other. Additionally there are kitchen counters (k0 to k15) which can be used to temporarily store onions and plates while you do something else. ',
 
@@ -96,8 +96,10 @@ class LLMManager:
         self.presence_penalty = presence_penalty
         self.api_server = api_server
         self.device = 'cuda'
-        
-        self.cost = 0
+        self.gpt_3_base_cost = 0.00075
+        self.gpt_4_base_cost = 0.011
+        self.gpt3_cost = 0
+        self.gpt4_cost = 0
         if self.model_type == 'openai':
             self.akey = os.getenv("AZURE_OPENAI_ENDPOINT")
             self.org = os.getenv("AZURE_OPENAI_API_KEY")
@@ -111,7 +113,7 @@ class LLMManager:
         else:
             self.client = OpenAI(
                 api_key="EMPTY",
-                base_url="http://localhost:8006/v1"
+                base_url="http://localhost:8000/v1"
             )
             self.inference_fn = self.run_openai_inference                    
 
@@ -128,9 +130,11 @@ class LLMManager:
         print(f"{bcolors.FAIL}LLM INFERENCE TIME: {time.time() - api_call_start}{bcolors.ENDC}")
         # print("INFERENCE STRING: ", completion.choices[0].message.content)
         total_tokens = completion.usage.total_tokens
-        cur_cost =  0.011 * (total_tokens / 1000)
-        self.cost += cur_cost 
-        print(f"COST SO FAR: {self.cost} USD")
+        gpt_3_cost =  self.gpt_3_base_cost * (total_tokens / 1000)
+        gpt_4_cost = self.gpt_4_base_cost * (total_tokens / 1000)
+        self.gpt3_cost += gpt_3_cost
+        self.gpt4_cost += gpt_4_cost
+        print(f"COST SO FAR GPT-4: {self.gpt4_cost} USD")
         return completion.choices[0].message.content
 
 
@@ -143,23 +147,24 @@ class LLMAgent:
         
 
         # Controls 
-        self.DEBUG = False     
+        self.DEBUG = True     
         self.enable_cache = False # True    
         self.write_to_cache = False 
         self.save_trajectory = True # True 
         # Enable kitchen counters only for GPT-4, other models cannot handle the complexity
         self.enable_kitchen_counters = True   
         self.explicit_help = False 
-        self.single_agent_ablation = True 
-
-        # self.model = 'gpt-4-0125'
-        # self.model_name = 'gpt-4-0125'
+        self.single_agent_ablation = True  
+        self.log_replay = pd.read_csv(f'/home/saaket/llm_coordination/src/agentic_evals/game_logs/ai/forced_coordination/forced_coordination_ai_gpt-4-0125_player_{self.player_id}_2024-03-28_16-39-54.csv')
+        self.replay_actions = list(self.log_replay['selected_action'])
+        self.model = 'gpt-4-0125'
+        self.model_name = 'gpt-4-0125'
         # self.model = 'gpt-35-turbo'
         # self.model_name = 'gpt-35-turbo'
-        # self.model_type = 'openai'
-        self.model_name = 'mistralai/Mixtral-8x7B-Instruct-v0.1'
-        self.model_type = 'mistral'
-        self.model = 'mixtral'
+        self.model_type = 'openai'
+        # self.model_name = 'mistralai/Mixtral-8x7B-Instruct-v0.1'
+        # self.model_type = 'mistral'
+        # self.model = 'mixtral'
 
         self.llm = LLMManager(model_name=self.model_name, model_type=self.model_type, cache_dir=os.getenv('HF_HOME'))
 
@@ -190,7 +195,7 @@ class LLMAgent:
 
 
         self.llm_system_prompt = "You are a friendly chat assistant who is correct and brief at all times."
-
+        self.partner_action_inference_string = ''
 
         # if self.explicit_help:
         #     self.base_prompt = f'''In the game Overcooked, I am {self.player_names[self.player_id]}, my teammate is {self.player_names[self.player_id]}. 
@@ -209,19 +214,45 @@ class LLMAgent:
         3. If we are in the same section, we will minimize our movement to avoid getting in each other's way.
         4. We will prefer helping the other player with their cooking and delivery if the situation arises.'''
 
-        self.conventions= f'''
-        1. We will try to maximize the number of deliveries. 
-        2. We will try to be efficient and prepare for the next soup while the current soup is cooking. 
+        # self.conventions= f'''
+        # 1. We will try to maximize the number of deliveries. 
+        # 2. We will try to be efficient and prepare for the next soup while the current soup is cooking. 
+        # '''
+        # self.conventions = f'''1. We want to be efficient and prepare for the next soup while the current soup is cooking. 
+        # '''
+
+        self.conventions = f'''1. We want to be efficient and prepare for the next soup while the current soup is cooking. 
+        2. We want to prefer helping our partner with their cooking and delivery if the situation arises
         '''
 
+
+
+        # self.conventions = f'''1. We want to be efficient and prepare for the next soup while the current soup is cooking. '''
+        # self.conventions = f'''
+        #     1. If we are in the same section of workspace, we will minimize our movement to avoid getting in each other's way.  
+        #     2. We will start preparing the next soup while the one before is being cooked/delivered.
+        #     3. We will make optimal use of all available cookers, and counters.
+        #     4. We will take actions that ensures as many soups are delivered as possible 
+        # '''
+
+        self.pi_prompt = f'''I am {self.player_names[self.player_id]}. I am playing the game Overcooked with my partner {self.player_names[self.other_player_id]}. {EnvDescriptions[self.layout_name]} 
+        Overcooked has the following rules: {self.rules}. We have agreed to follow the following conventions: {self.conventions}. I'll provide my action history, current state, teammate's status, and my possible actions. Help me understand my partner's intentions and needs. describe what my partner intends to do or needs in one sentence only. Do not say anything else.'''
+
+        self.verifier_prompt = f'''I am {self.player_names[self.player_id]}. I am playing the game Overcooked with my partner {self.player_names[self.other_player_id]}. {EnvDescriptions[self.layout_name]} 
+        Overcooked has the following rules: {self.rules}. We have agreed to follow the following conventions: {self.conventions}.'''
+
+        self.verifier_system_prompt = 'You are an action verification agent for Overcooked. I will provide you with my inventory, location information, and state information for me and my partner and my selected action. You need to check whether the action satisfies the criteria: 1. Rule Following: It follows to the rules of the game. 2. Convention Following: It adheres to the mentioned conventions 3. Safety: The selected action does not lead to the game being stuck. Your response should be Reasoning:<Brief Reasoning for Verification> followed by "Verification: Okay" if selected action follows **all three** criteria and "Verification: Not Okay" otherwise. Do not say anything else. Got it?'
+        
+
         # With COT
-        # self.base_prompt = f'''I am {self.player_names[self.player_id]}. I am playing the game Overcooked with my partner {self.player_names[self.other_player_id]}. Overcooked has the following rules: {self.rules}. We have agreed to follow the following conventions: {self.conventions}. I'll provide my action history, current state, teammate's status, and my possible actions. Help me select the best action from the list. Format your response as: Explanation:<Brief explanation for my next action>. Action: <action>. Only select one action. Do not say anything else. Got it?'''
+        # self.base_prompt = f'''I am {self.player_names[self.player_id]}. I am playing the game Overcooked with my partner {self.player_names[self.other_player_id]}. {EnvDescriptions[self.layout_name]} 
+        # Overcooked has the following rules: {self.rules}. We have agreed to follow the following conventions: {self.conventions}. I'll provide my action history, current state, teammate's status, and my possible actions. Help me select the best action from the list. Format your response as: Explanation:<Brief explanation for my next action>. Action: <action>. Only select one action. Do not say anything else. Got it?'''
 
         # Without COT
-        self.base_prompt = f'''I am {self.player_names[self.player_id]}. I am playing the game Overcooked with my partner {self.player_names[self.other_player_id]}. Overcooked has the following rules: {self.rules}. We have agreed to follow the following conventions: {self.conventions}. I'll provide my action history, current state, teammate's status, and my possible actions. Help me select the best action from the list. Format your response as: Action: <action>. Only select one action. Do not say anything else. Got it?'''
+        self.base_prompt = f'''I am {self.player_names[self.player_id]}. I am playing the game Overcooked with my partner {self.player_names[self.other_player_id]}. {EnvDescriptions[self.layout_name]}
+        Overcooked has the following rules: {self.rules}. We have agreed to follow the following conventions: {self.conventions}. I'll provide my action history, current state, teammate's status, and my possible actions. Help me select the best action from the list. Format your response as: Action: <action>. Only select one action. Do not say anything else. Got it?'''
 
         # self.base_prompt = f'''I am {self.player_names[self.player_id]}. I am playing the game Overcooked with my partner {self.player_names[self.other_player_id]}. Overcooked has the following rules: {self.rules}. We have agreed to follow the following conventions: {self.conventions}. I'll provide my action history, current state, teammate's status, and my possible actions. Help me select the best action from the list. Format your response as: Action: <action>. Only select one action. Do not say anything else. Got it?'''
-
         self.assistant_response_initial = f'''Got it!'''
 
         self.action_regex = r"Action:\s*(.*)"
@@ -232,6 +263,16 @@ class LLMAgent:
                         {"role": "user", "content": self.base_prompt},
                         {"role": "assistant", "content": self.assistant_response_initial},
                     ]
+            self.pi_message = [
+                        {"role": "system", "content": self.llm_system_prompt},
+                        {"role": "user", "content": self.pi_prompt},
+                        {"role": "assistant", "content": self.assistant_response_initial},
+            ]
+            self.verifier_base_message = [
+                        {"role": "system", "content": self.verifier_system_prompt},
+                        {"role": "user", "content": self.base_prompt},
+                        {"role": "assistant", "content": self.assistant_response_initial},
+            ]
         else:
             self.message = [
                         {"role": "user", "content": self.base_prompt},
@@ -255,118 +296,220 @@ class LLMAgent:
         # print(self.all_actions)
         self.log_csv_dict = {}
         self.action_history = []
-
+    
     def _get_available_actions(self, state_for_llm, message):
         # Available Action Constraints
         available_actions = []
-
-        #### IF Player is holding NOTHING ####
+        # Check what player is holding 
         if state_for_llm[self.player_id]['held_object'] == "nothing":
-        
             for idx, d in enumerate(state_for_llm['distances']['onion_dispenser']):
                 if d[0] not in ['infinite']:
-                    available_actions.append(f'pick up onion from o{idx}')
+                    available_actions.append(self.action_set['onion_dispenser'][idx])
 
             for idx, d in enumerate(state_for_llm['distances']['plate_dispenser']):
                 if d[0] not in ['infinite']:
-                    available_actions.append(f'pick up plate from p{idx}')
+                    available_actions.append(self.action_set['plate'][idx])
             
             if self.enable_kitchen_counters:
+            
                 for idx, d in enumerate(state_for_llm['distances']['kitchen_counter']):
-                    if d[0] not in ['infinite']:
-                        if state_for_llm['kitchen_counter_objects'][idx] == 'onion':
-                            available_actions.append(f'pick up onion from k{idx}')
-                        if state_for_llm['kitchen_counter_objects'][idx] == 'plate':
-                            available_actions.append(f'pick up plate from k{idx}')
-                        if state_for_llm['kitchen_counter_objects'][idx] == 'soup in plate':
-                            available_actions.append(f'pick up cooked soup from k{idx}')
+                    if d[0] not in ['infinite'] and state_for_llm['kitchen_counter_objects'][idx] == 'onion':
+                        available_actions.append(self.action_set['kitchen_counter_pick_onion'][idx])
+                    if d[0] not in ['infinite'] and state_for_llm['kitchen_counter_objects'][idx] == 'plate':
+                        available_actions.append(self.action_set['kitchen_counter_pick_plate'][idx])
+                    if d[0] not in ['infinite'] and state_for_llm['kitchen_counter_objects'][idx] == 'soup in plate':
+                        available_actions.append(self.action_set['kitchen_counter_pick_soup'][idx])
 
-            # If layout contains shared counter
+
             if 'storage_counter_pick_onion' in self.action_set:
                 for idx, d in enumerate(state_for_llm['distances']['storage_counter']):
                     if d[0] not in ['infinite']:
                         if state_for_llm['storage_counter_objects'][idx] == 'onion':
-                            available_actions.append(f'pick up onion from s{idx}')
+                            available_actions.append(self.action_set['storage_counter_pick_onion'][idx])
                         elif state_for_llm['storage_counter_objects'][idx] == 'plate':
-                            available_actions.append(f'pick up plate from s{idx}')
+                            available_actions.append(self.action_set['storage_counter_pick_plate'][idx])
                         elif state_for_llm['storage_counter_objects'][idx] == 'soup in plate':
-                            available_actions.append(f'pick up cooked soup from s{idx}')
+                            available_actions.append(self.action_set['storage_counter_pick_soup'][idx])
             
             for idx, d in enumerate(state_for_llm['distances']['gate']):
                 if d[0] not in ['infinite']:
                     if state_for_llm['gate_status'][idx] == 'closed':
-                        available_actions.append(f'open gate g{idx}')
-        #### END Player is holding NOTHING ####
+                        available_actions.append(self.action_set['gate'][idx])
 
-        #### IF Player is holding Onion ####
+            # Add turn on cooker to instruction instead of internal mechanism
+            # for idx, d in enumerate(state_for_llm['distances']['cooker']):
+            #     if d[0] != 'infinite':
+            #         available_actions.append(self.action_set['cooking_status'][idx])
+
         elif state_for_llm[self.player_id]['held_object'] == 'onion':
             for idx, d in enumerate(state_for_llm['distances']['cooker']):
                 if d[0] not in ['infinite']:
-                    available_actions.append(f'place onion in c{idx}')
+                    available_actions.append(self.action_set['cooker'][idx])
 
             if self.enable_kitchen_counters:
                 if len(self.empty_kitchen_counters)>0:
                     
                     kidx = self.empty_kitchen_counter_distances.index(min(self.empty_kitchen_counter_distances))
                     
-                    available_actions.append(f'place onion in k{kidx}')
+                    k_action = self.action_set['kitchen_counter_place_onion'][kidx]
+                    
+                    available_actions.append(k_action)
 
             if 'storage_counter_place_onion' in self.action_set:
                 for idx, d in enumerate(state_for_llm['distances']['storage_counter']):
-                    if d[0] not in 'infinite':
+                    if d[0] not in ['infinite']:
                         if state_for_llm['storage_counter_objects'][idx] == 'empty':
-                            available_actions.append(f'place onion on s{idx}')
-        #### END Player is holding Onion ####
+                            available_actions.append(self.action_set['storage_counter_place_onion'][idx])
 
-        #### IF Player is holding Plate ####
         elif state_for_llm[self.player_id]['held_object'] == 'plate':
             for idx, d in enumerate(state_for_llm['distances']['cooker']):
-                if d[0] not in 'infinite':
-                    available_actions.append(f'load cooked soup on plate from c{idx}')
+                if d[0] not in ['infinite']:
+                    available_actions.append(self.action_set['cooked_soup'][idx])
             
             if self.enable_kitchen_counters:
                 if len(self.empty_kitchen_counters)>0:
                     kidx = self.empty_kitchen_counter_distances.index(min(self.empty_kitchen_counter_distances))
                     
-                    available_actions.append(f'place plate on k{kidx}')
+                    k_action = self.action_set['kitchen_counter_place_plate'][kidx]
+                    
+                    available_actions.append(k_action)
 
             if 'storage_counter_place_plate' in self.action_set:
                 for idx, d in enumerate(state_for_llm['distances']['storage_counter']):
                     if d[0] not in ['infinite']:
                         if state_for_llm['storage_counter_objects'][idx] == 'empty':
-                            available_actions.append(f'place plate on s{idx}')
-        #### END Player is holding Plate ####
+                            available_actions.append(self.action_set['storage_counter_place_plate'][idx])
 
-        #### If Player is holding Soup ####
         elif state_for_llm[self.player_id]['held_object'] == 'soup in plate':
             for idx, d in enumerate(state_for_llm['distances']['delivery_zone']):
                 if d[0] not in ['infinite']:
-                    available_actions.append(f'place soup for delivery in d{idx}')
-
+                    available_actions.append(self.action_set['delivery_area'][idx])
             if self.enable_kitchen_counters:
                 if len(self.empty_kitchen_counters)>0:
                     kidx = self.empty_kitchen_counter_distances.index(min(self.empty_kitchen_counter_distances))
                     
-                    # k_action = self.action_set['kitchen_counter_place_plate'][kidx]
+                    k_action = self.action_set['kitchen_counter_place_plate'][kidx]
                     
-                    available_actions.append(f'place cooked soup on k{idx}')
+                    available_actions.append(k_action)
 
             if 'storage_counter_place_soup' in self.action_set:
                 for idx, d in enumerate(state_for_llm['distances']['storage_counter']):
                     if d[0] not in ['infinite']:
                         if state_for_llm['storage_counter_objects'][idx] == 'empty':
-                            available_actions.append(f'place cooked soup on s{idx}')
+                            available_actions.append(self.action_set['storage_counter_place_soup'][idx])
+        return available_actions + self.action_set['wait'] + self.action_set['collision_avoidance']
 
-        #### END Player is holding Soup ####
-        available_actions.append('wait.')
-        available_actions.append('move away.')
+    # def _get_available_actions(self, state_for_llm, message):
+    #     # Available Action Constraints
+    #     available_actions = []
 
-        return self.add_ordinals_to_actions(available_actions)
+    #     #### IF Player is holding NOTHING ####
+    #     if state_for_llm[self.player_id]['held_object'] == "nothing":
+        
+    #         for idx, d in enumerate(state_for_llm['distances']['onion_dispenser']):
+    #             if d[0] not in ['infinite']:
+    #                 available_actions.append(f'pick up onion from o{idx}')
 
-    def add_ordinals_to_actions(self, available_actions):
-        for i in range(len(available_actions)):
-            available_actions[i] = f'{chr(65+i)}. {available_actions[i]}'
-        return available_actions
+    #         for idx, d in enumerate(state_for_llm['distances']['plate_dispenser']):
+    #             if d[0] not in ['infinite']:
+    #                 available_actions.append(f'pick up plate from p{idx}')
+            
+    #         if self.enable_kitchen_counters:
+    #             for idx, d in enumerate(state_for_llm['distances']['kitchen_counter']):
+    #                 if d[0] not in ['infinite']:
+    #                     if state_for_llm['kitchen_counter_objects'][idx] == 'onion':
+    #                         available_actions.append(f'pick up onion from k{idx}')
+    #                     if state_for_llm['kitchen_counter_objects'][idx] == 'plate':
+    #                         available_actions.append(f'pick up plate from k{idx}')
+    #                     if state_for_llm['kitchen_counter_objects'][idx] == 'soup in plate':
+    #                         available_actions.append(f'pick up cooked soup from k{idx}')
+
+    #         # If layout contains shared counter
+    #         if 'storage_counter_pick_onion' in self.action_set:
+    #             for idx, d in enumerate(state_for_llm['distances']['storage_counter']):
+    #                 if d[0] not in ['infinite']:
+    #                     if state_for_llm['storage_counter_objects'][idx] == 'onion':
+    #                         available_actions.append(f'pick up onion from s{idx}')
+    #                     elif state_for_llm['storage_counter_objects'][idx] == 'plate':
+    #                         available_actions.append(f'pick up plate from s{idx}')
+    #                     elif state_for_llm['storage_counter_objects'][idx] == 'soup in plate':
+    #                         available_actions.append(f'pick up cooked soup from s{idx}')
+            
+    #         for idx, d in enumerate(state_for_llm['distances']['gate']):
+    #             if d[0] not in ['infinite']:
+    #                 if state_for_llm['gate_status'][idx] == 'closed':
+    #                     available_actions.append(f'open gate g{idx}')
+    #     #### END Player is holding NOTHING ####
+
+    #     #### IF Player is holding Onion ####
+    #     elif state_for_llm[self.player_id]['held_object'] == 'onion':
+    #         for idx, d in enumerate(state_for_llm['distances']['cooker']):
+    #             if d[0] not in ['infinite']:
+    #                 available_actions.append(f'place onion in c{idx}')
+
+    #         if self.enable_kitchen_counters:
+    #             if len(self.empty_kitchen_counters)>0:
+                    
+    #                 kidx = self.empty_kitchen_counter_distances.index(min(self.empty_kitchen_counter_distances))
+                    
+    #                 available_actions.append(f'place onion in k{kidx}')
+
+    #         if 'storage_counter_place_onion' in self.action_set:
+    #             for idx, d in enumerate(state_for_llm['distances']['storage_counter']):
+    #                 if d[0] not in 'infinite':
+    #                     if state_for_llm['storage_counter_objects'][idx] == 'empty':
+    #                         available_actions.append(f'place onion on s{idx}')
+    #     #### END Player is holding Onion ####
+
+    #     #### IF Player is holding Plate ####
+    #     elif state_for_llm[self.player_id]['held_object'] == 'plate':
+    #         for idx, d in enumerate(state_for_llm['distances']['cooker']):
+    #             if d[0] not in 'infinite':
+    #                 available_actions.append(f'load cooked soup on plate from c{idx}')
+            
+    #         if self.enable_kitchen_counters:
+    #             if len(self.empty_kitchen_counters)>0:
+    #                 kidx = self.empty_kitchen_counter_distances.index(min(self.empty_kitchen_counter_distances))
+                    
+    #                 available_actions.append(f'place plate on k{kidx}')
+
+    #         if 'storage_counter_place_plate' in self.action_set:
+    #             for idx, d in enumerate(state_for_llm['distances']['storage_counter']):
+    #                 if d[0] not in ['infinite']:
+    #                     if state_for_llm['storage_counter_objects'][idx] == 'empty':
+    #                         available_actions.append(f'place plate on s{idx}')
+    #     #### END Player is holding Plate ####
+
+    #     #### If Player is holding Soup ####
+    #     elif state_for_llm[self.player_id]['held_object'] == 'soup in plate':
+    #         for idx, d in enumerate(state_for_llm['distances']['delivery_zone']):
+    #             if d[0] not in ['infinite']:
+    #                 available_actions.append(f'place soup for delivery in d{idx}')
+
+    #         if self.enable_kitchen_counters:
+    #             if len(self.empty_kitchen_counters)>0:
+    #                 kidx = self.empty_kitchen_counter_distances.index(min(self.empty_kitchen_counter_distances))
+                    
+    #                 # k_action = self.action_set['kitchen_counter_place_plate'][kidx]
+                    
+    #                 available_actions.append(f'place cooked soup on k{idx}')
+
+    #         if 'storage_counter_place_soup' in self.action_set:
+    #             for idx, d in enumerate(state_for_llm['distances']['storage_counter']):
+    #                 if d[0] not in ['infinite']:
+    #                     if state_for_llm['storage_counter_objects'][idx] == 'empty':
+    #                         available_actions.append(f'place cooked soup on s{idx}')
+
+    #     #### END Player is holding Soup ####
+    #     available_actions.append('wait.')
+    #     available_actions.append('move away.')
+
+    #     return self.add_ordinals_to_actions(available_actions)
+
+    # def add_ordinals_to_actions(self, available_actions):
+    #     for i in range(len(available_actions)):
+    #         available_actions[i] = f'{available_actions[i]}'
+    #     return available_actions
 
     
     # def _get_available_actions(self, state_for_llm, message):
@@ -660,6 +803,12 @@ class LLMAgent:
         
         return description
 
+    def infer_partner_state(self, description):
+        partner_inference_message = self.pi_message + [{"role": "user", "content": f"{description}"}]
+        epistemic_response_string = self.llm.inference_fn(partner_inference_message)
+        print(f"{bcolors.OKGREEN}PARTNER INFERENCE: {epistemic_response_string}{bcolors.ENDC}")
+        return epistemic_response_string
+
     def _state_to_description(self, state_for_llm, other_player_message):
         print('STATE FOR LLM: ', state_for_llm)
         state_for_llm = self._correct_dish_to_plate(state_for_llm)
@@ -674,8 +823,10 @@ class LLMAgent:
 
         # get available actions based on current state and add the information to the description
         self.available_actions_list = self._get_available_actions(state_for_llm, None)
-        available_actions = '\n'.join(self.available_actions_list)
-        description += f"\nAvailable Actions:\n{available_actions}"
+        # self.partner_inference_string = self.infer_partner_state(description)
+        # description += self.partner_inference_string
+        available_actions = ', '.join(self.available_actions_list)
+        description += f"\nAvailable Actions:\n[{available_actions}]"
         add_to_dict_list(self.log_csv_dict, f"available_actions", " | ".join(self.available_actions_list))
 
         return description
@@ -725,8 +876,11 @@ class LLMAgent:
         message = ''
         print(f"{bcolors.HEADER}CURRENT PLAYER: {self.player_names[self.player_id]}{bcolors.ENDC}")
         print(f"{bcolors.FAIL}{state_description}{bcolors.ENDC}")
+        
         if self.DEBUG:
             selected_action = 'wait.'
+            selected_action = self.replay_actions.pop(0)
+            return selected_action, '' 
         elif len(self.player_actions) > 0:
             selected_action = self.player_actions.pop(0)
             message = ''
@@ -745,13 +899,61 @@ class LLMAgent:
                     action, message = self.cache[state_only_desc]
                 else:
                     if len(self.available_actions_list) > 1:
-                        if set(self.available_actions_list) == set(['A. wait.', 'B. move away.']):
-                            action = 'wait.'
+                        # Trick to avoid too many calls to the API in Forced Coordination 
+                        if set(self.available_actions_list) == set(['AAA. wait.', 'BBB. move away.']):
+                            action = 'A. wait.'
                         else:
                             messages = self.message + [{"role": "user", "content": state_description}]
                             response_string = self.llm.inference_fn(messages=messages)
                             print(f'''{bcolors.WARNING}LLM RESPONSE: {response_string}{bcolors.ENDC}''')
                             action = self.find_best_match(response_string)
+
+
+                            ### VERIFICATION ###
+                            # verification_response_string = ''
+                            # verifier_responses = []
+                            # verifier_description = f"State: {state_description.replace(self.partner_action_inference_string, '')}\n\n My Solution: {action}. Think step by step. Think about safety, think about rules, think about conventions. "
+                            # print(f'''{bcolors.WARNING}VERIFIER INPUT: {verifier_description}{bcolors.ENDC}''')
+                            # self.verifier_message = self.verifier_base_message + [{"role": "user", "content": verifier_description}]
+                            # verification_response_string = self.llm.inference_fn(self.verifier_message)
+                            # self.num_api_calls += 1
+                            # verifier_responses.append(verification_response_string)
+                            # print(f'''{bcolors.OKCYAN}VERIFICATION RESPONSE: {verification_response_string}{bcolors.ENDC}''')
+                            # counter = 0 
+                            # while 'verification: okay' not in verification_response_string.lower(): 
+                            #     if action in self.available_actions_list:  
+                            #         self.available_actions_list.remove(action)
+                            #     counter += 1
+                            #     self.generator_message.append({"role": "assistant", "content": response_string})
+                            #     updated_generator_message = f"Your selected action: {action} is not appropriate. {verification_response_string}. Please choose another action. List of Available Actions:\n{self.available_actions_list}"
+
+
+                            #     messages.append({"role": "user", "content": updated_generator_message})
+                                
+                            #     response_string = self.llm.inference_f(messages)
+                            #     self.num_api_calls += 1
+                            #     print(f"{bcolors.WARNING}LLM CORRECTED RESPONSE: {response_string}{bcolors.ENDC}") 
+                            #     action = self.find_best_match(response_string)
+    
+                            #     self.verifier_message[-1]["content"] = f"State: {state_description.replace(self.partner_action_inference_string, '')}\n\n My Solution: {action}. Think step by step. Think about safety, think about rules, think about conventions. "
+
+                            #     verification_response_string = self.llm.inference_f(self.verifier_message)
+                            #     self.num_api_calls += 1
+                            #     verifier_responses.append(verification_response_string) 
+                            #     print(f'''{bcolors.OKCYAN}VERIFICATION RESPONSE: {verification_response_string}{bcolors.ENDC}''')
+                                
+                            # add_to_dict_list(self.log_csv_dict, 'VERIFICATION Response', ' ***** '.join(verifier_responses)) 
+
+                            # verification_string = self.llm.inference_fn(messages=self.verifier_message + [{"role": "user", "content": f"My selected Action: {action}"}])
+                            # print('VERIFIER RESPONSE: ', verification_string)
+                            # while 'Verification: Okay' not in verification_string:
+                            #     messages += [{"role": "assistant", "content": response_string}] 
+                            #     messages += [{"role": "user", "content": verification_string}]
+                            #     response_string = self.llm.inference_fn(messages=messages)
+                            #     print(f'''{bcolors.WARNING}LLM RESPONSE: {response_string}{bcolors.ENDC}''')
+                            #     action = self.find_best_match(response_string)
+                                
+                            #     verification_string = self.llm.inference_fn(messages=self.verifier_message + [{"role": "user", "content": f"My selected Action: {action}"}])
 
                     else:
                         action = 'wait.'
@@ -770,7 +972,8 @@ class LLMAgent:
             except Exception as e:
                 selected_action = 'wait.' 
                 print(f'Failed to get response from openai api for player {self.player_id} due to {e}')
-                sys.exit(0)
+                # sys.exit(0)
+                time.sleep(1.)
                 pass
             add_to_dict_list(self.log_csv_dict, 'full_state_description', state_description)
             add_to_dict_list(self.log_csv_dict, 'selected_action', selected_action)
