@@ -137,7 +137,7 @@ class LLMAgent:
         
 
         # Controls 
-        self.DEBUG = True     
+        self.DEBUG = False      
         self.enable_cache = False # True    
         self.write_to_cache = False 
         self.save_trajectory = True # True 
@@ -145,7 +145,7 @@ class LLMAgent:
         self.enable_kitchen_counters = True   
         self.explicit_help = False 
         self.single_agent_ablation = True  
-        # self.log_replay = pd.read_csv(f'~/llm_coordination/src/agentic_evals/game_logs/ai/forced_coordination/forced_coordination_ai_gpt-4-0125_player_{self.player_id}_2024-03-28_16-39-54.csv')
+        self.log_replay = pd.read_csv(f'~/llm_coordination/src/agentic_evals/game_logs/ai/forced_coordination/forced_coordination_ai_gpt-4-0125_player_{self.player_id}_2024-03-28_16-39-54.csv')
         self.replay_actions = list(self.log_replay['selected_action'])
         # self.model = 'gpt-4-0125'
         # self.model_name = 'gpt-4-0125'
