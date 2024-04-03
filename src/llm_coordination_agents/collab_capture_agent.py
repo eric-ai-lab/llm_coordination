@@ -93,7 +93,7 @@ class LLMAgent:
         else:
             self.model_type = 'mistral'
 
-        self.llm = LLMManager(model_name=self.model_name, model_type=self.model_type, cache_dir=os.getenv('HF_HOME'))
+        self.llm = LLMManager(model_name=self.model, model_type=self.model_type, cache_dir=os.getenv('HF_HOME'))
 
         self.experiment_type = 'ai'
         
