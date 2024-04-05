@@ -2,7 +2,7 @@
   <img src="assets/Coagents.png" alt="Logo" style="vertical-align:middle" width="50"> LLM-Coordination
 </h1>
 
-Authors: [Saaket Agashe](https://saa1605.github.io/), [Yue Fan](http://www.yfan.site/), [Anthony Reyna](), [Xin Eric Wang](https://eric-xw.github.io/) 
+Authors: [Saaket Agashe](https://saa1605.github.io/), [Yue Fan](http://www.yfan.site/), [Anthony Reyna](https://anthony-reyna.com/), [Xin Eric Wang](https://eric-xw.github.io/) 
 
 University of California, Santa Cruz
 
